@@ -1,0 +1,6 @@
+PySide6>=6.6.0
+opencv-python>=4.8.0
+pyzbar>=0.1.9
+qrcode[pil]>=7.4.0
+numpy>=1.24.0
+overrides>=7.4.0

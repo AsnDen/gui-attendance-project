@@ -8,7 +8,7 @@ Provides:
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from roll.core.entities import (
@@ -28,10 +28,12 @@ class IAttendanceRepository(ABC):
 
     @abstractmethod
     def get(self, attendance_id: int) -> BaseAttendance | None:
-        """Finds and returns attendance by it's id.
+        """Finds and returns attendance by it's id."""
 
-        Returns None if attendance is not found.
-        """
+    @abstractmethod
+    def get_by_event(self, event_id: int) -> Tuple[BaseAttendance, ...]:
+        """Get all attendance records for an event."""
+        pass
 
     @abstractmethod
     def add(self, attendance: AttendanceUpdateDTO) -> None:
@@ -43,10 +45,7 @@ class IAttendanceRepository(ABC):
 
     @abstractmethod
     def delete(self, attendance_id: int) -> bool:
-        """Deletes attendance from repository.
-
-        Returns bool if operation is successfull.
-        """
+        """Deletes attendance from repository."""
 
 
 class IEventRepository(ABC):
@@ -54,18 +53,15 @@ class IEventRepository(ABC):
 
     @abstractmethod
     def get(self, event_id: int) -> BaseEvent | None:
-        """Finds and returns event by it's id.
-
-        Returns None if event is not found.
-        """
+        """Finds and returns event by it's id."""
 
     @abstractmethod
     def get_all(self) -> tuple[BaseEvent, ...]:
-        """Returns tuple of all saved eventa."""
+        """Returns tuple of all saved events."""
 
     @abstractmethod
-    def add(self, event: EventUpdateDTO) -> None:
-        """Saves new event in repository."""
+    def add(self, event: EventUpdateDTO) -> int:
+        """Saves new event in repository and returns generated ID."""
 
     @abstractmethod
     def update(self, event_id: int, event: EventUpdateDTO) -> None:
@@ -73,10 +69,7 @@ class IEventRepository(ABC):
 
     @abstractmethod
     def delete(self, event_id: int) -> bool:
-        """Deletes event from repository.
-
-        Returns bool if operation is successfull.
-        """
+        """Deletes event from repository."""
 
 
 class IPersonRepository(ABC):
@@ -84,29 +77,29 @@ class IPersonRepository(ABC):
 
     @abstractmethod
     def get(self, person_id: int) -> BasePerson | None:
-        """Finds and returns person by it's id.
-
-        Returns None if person is not found.
-        """
+        pass
 
     @abstractmethod
     def get_all(self) -> tuple[BasePerson, ...]:
-        """Returns tuple of all saved persons."""
+        pass
 
     @abstractmethod
-    def add(self, person: PersonUpdateDTO) -> None:
-        """Saves new person in repository."""
+    def add(self, person: PersonUpdateDTO) -> int:
+        """Saves new person with auto-generated ID and returns ID."""
+        pass
+
+    @abstractmethod
+    def add_with_id(self, person_id: int, label: str, description: str | None = None) -> None:
+        """Saves new person with manual ID."""
+        pass
 
     @abstractmethod
     def update(self, person_id: int, person: PersonUpdateDTO) -> None:
-        """Updates existing person info."""
+        pass
 
     @abstractmethod
     def delete(self, person_id: int) -> bool:
-        """Deletes person from repository.
-
-        Returns bool if operation is successfull.
-        """
+        pass
 
 
 class IIdentifierRepository(ABC):
@@ -114,10 +107,16 @@ class IIdentifierRepository(ABC):
 
     @abstractmethod
     def get(self, identifier_id: int) -> BaseIdentifier | None:
-        """Finds and returns identifier by it's id.
+        """Finds and returns identifier by it's id."""
 
-        Returns None if identifier is not found.
-        """
+    @abstractmethod
+    def get_by_hash(self, hash_value: str) -> BaseIdentifier | None:
+        """Finds and returns identifier by hash value."""
+
+    @abstractmethod
+    def get_by_person(self, person_id: int) -> Tuple[BaseIdentifier, ...]:
+        """Get all identifiers for a person."""
+        pass
 
     @abstractmethod
     def add(self, identifier: IdentifierUpdateDTO) -> None:
@@ -129,7 +128,4 @@ class IIdentifierRepository(ABC):
 
     @abstractmethod
     def delete(self, identifier_id: int) -> bool:
-        """Deletes identifier from repository.
-
-        Returns bool if operation is successfull.
-        """
+        """Deletes identifier from repository."""

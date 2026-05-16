@@ -5,6 +5,12 @@ Provides:
     IEventRepository
     IIdentifierRepository
     IPersonRepository
+    IAttendanceService
+    IEventService
+    IIdentifierService
+    IIdentifierReaderService
+    IPersonService
+    IVerificationService
 """
 
 from roll.core.interfaces.repositories import (
