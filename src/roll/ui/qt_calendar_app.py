@@ -1,7 +1,8 @@
 import sys
-from PySide6.QtWidgets import *
+
 from PySide6.QtCore import *
 from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 
 
 # ============= ДИАЛОГ СОЗДАНИЯ/РЕДАКТИРОВАНИЯ СОБЫТИЯ (ТОЛЬКО ФОРМА) =============
@@ -10,7 +11,9 @@ class EventDialog(QDialog):
 
     def __init__(self, parent, event=None):
         super().__init__(parent)
-        self.setWindowTitle("Создание события" if not event else "Редактирование события")
+        self.setWindowTitle(
+            "Создание события" if not event else "Редактирование события"
+        )
         self.setModal(True)
         self.setMinimumWidth(500)
         self.setup_ui()
@@ -92,8 +95,7 @@ class EventDialog(QDialog):
             self.folder_edit.setText(folder)
 
     def get_event_data(self):
-        """
-        ВОЗВРАЩАЕТ ДАННЫЕ ИЗ ФОРМЫ ДЛЯ ПЕРЕДАЧИ В БЭКЕНД
+        """ВОЗВРАЩАЕТ ДАННЫЕ ИЗ ФОРМЫ ДЛЯ ПЕРЕДАЧИ В БЭКЕНД
         Здесь backend должен забрать эти данные и сохранить
         """
         return {
@@ -102,7 +104,7 @@ class EventDialog(QDialog):
             "duration": self.duration_spin.value(),
             "recurrence": self.recurrence_combo.currentText(),
             "folder_path": self.folder_edit.text(),
-            "attendance": [cb.isChecked() for cb in self.user_checkboxes]
+            "attendance": [cb.isChecked() for cb in self.user_checkboxes],
         }
 
 
@@ -123,7 +125,9 @@ class AttendanceWindow(QMainWindow):
 
         # Информация о событии (демо-данные)
         info_frame = QFrame()
-        info_frame.setStyleSheet("background-color: #2c3e50; border-radius: 10px; padding: 10px;")
+        info_frame.setStyleSheet(
+            "background-color: #2c3e50; border-radius: 10px; padding: 10px;"
+        )
         info_layout = QVBoxLayout(info_frame)
 
         info_layout.addWidget(QLabel("📌 Событие: Лекция по Python"))
@@ -139,19 +143,24 @@ class AttendanceWindow(QMainWindow):
         # Здесь backend должен подставить реальный виджет камеры
         camera_placeholder = QLabel("📷 [Здесь будет окно камеры]")
         camera_placeholder.setAlignment(Qt.AlignCenter)
-        camera_placeholder.setStyleSheet("background-color: #1a1a1a; padding: 50px; border-radius: 10px;")
+        camera_placeholder.setStyleSheet(
+            "background-color: #1a1a1a; padding: 50px; border-radius: 10px;"
+        )
         camera_placeholder.setMinimumHeight(300)
         layout.addWidget(camera_placeholder)
 
         # Результат сканирования
         self.result_label = QLabel("⏳ Ожидание сканирования...")
         self.result_label.setStyleSheet(
-            "font-size: 14px; padding: 10px; background-color: #34495e; border-radius: 5px;")
+            "font-size: 14px; padding: 10px; background-color: #34495e; border-radius: 5px;"
+        )
         self.result_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.result_label)
 
         # Инструкция
-        test_label = QLabel("💡 Подсказка: для отметки пользователя дважды кликните по нему в списке")
+        test_label = QLabel(
+            "💡 Подсказка: для отметки пользователя дважды кликните по нему в списке"
+        )
         test_label.setStyleSheet("color: #f39c12; font-size: 12px;")
         layout.addWidget(test_label)
 
@@ -160,7 +169,11 @@ class AttendanceWindow(QMainWindow):
 
         self.users_list = QListWidget()
         # ДЕМО-ДАННЫЕ ДЛЯ ОТОБРАЖЕНИЯ
-        demo_users = ["Иван Петров — Студент", "Мария Сидорова — Студентка", "Алексей Иванов — Преподаватель"]
+        demo_users = [
+            "Иван Петров — Студент",
+            "Мария Сидорова — Студентка",
+            "Алексей Иванов — Преподаватель",
+        ]
         for user in demo_users:
             self.users_list.addItem(user)
         self.users_list.itemDoubleClicked.connect(self.manual_mark)
@@ -170,14 +183,20 @@ class AttendanceWindow(QMainWindow):
         # Кнопка закрытия
         btn_close = QPushButton("Закрыть")
         btn_close.clicked.connect(self.close)
-        btn_close.setStyleSheet("background-color: #e74c3c; color: white; padding: 8px;")
+        btn_close.setStyleSheet(
+            "background-color: #e74c3c; color: white; padding: 8px;"
+        )
         layout.addWidget(btn_close)
 
     def manual_mark(self, item):
         """Ручная отметка (двойной клик) — ПУСТАЯ ЗАГЛУШКА"""
         user_name = item.text()
-        self.result_label.setText(f"✅ Отмечен: {user_name}\n(здесь backend отметит посещаемость)")
-        self.result_label.setStyleSheet("background-color: #27ae60; color: white; padding: 10px;")
+        self.result_label.setText(
+            f"✅ Отмечен: {user_name}\n(здесь backend отметит посещаемость)"
+        )
+        self.result_label.setStyleSheet(
+            "background-color: #27ae60; color: white; padding: 10px;"
+        )
 
         # Визуально отмечаем в списке
         item.setBackground(QBrush(QColor(39, 174, 96, 100)))
@@ -224,13 +243,17 @@ class MainWindow(QMainWindow):
 
         self.btn_create = QPushButton("➕ Создать событие")
         self.btn_create.clicked.connect(self.create_event)
-        self.btn_create.setStyleSheet("background-color: #3498db; color: white; padding: 8px;")
+        self.btn_create.setStyleSheet(
+            "background-color: #3498db; color: white; padding: 8px;"
+        )
         btn_layout.addWidget(self.btn_create)
 
         self.btn_delete_event = QPushButton("🗑️ Удалить событие")
         self.btn_delete_event.clicked.connect(self.delete_event)
         self.btn_delete_event.setEnabled(False)
-        self.btn_delete_event.setStyleSheet("background-color: #e74c3c; color: white; padding: 8px;")
+        self.btn_delete_event.setStyleSheet(
+            "background-color: #e74c3c; color: white; padding: 8px;"
+        )
         btn_layout.addWidget(self.btn_delete_event)
 
         left_layout.addWidget(btn_frame)
@@ -240,7 +263,8 @@ class MainWindow(QMainWindow):
         self.btn_attendance.clicked.connect(self.open_attendance_mode)
         self.btn_attendance.setEnabled(False)
         self.btn_attendance.setStyleSheet(
-            "background-color: #2ecc71; color: white; padding: 12px; font-size: 14px; font-weight: bold;")
+            "background-color: #2ecc71; color: white; padding: 12px; font-size: 14px; font-weight: bold;"
+        )
         left_layout.addWidget(self.btn_attendance)
 
         # ========== ПРАВАЯ ПАНЕЛЬ: ПОЛЬЗОВАТЕЛИ ==========
@@ -264,7 +288,9 @@ class MainWindow(QMainWindow):
 
         self.user_label_edit = QLineEdit()
         self.user_label_edit.setPlaceholderText("Введите новый label")
-        edit_layout.addRow("🏷️ Label (только это поле можно редактировать):", self.user_label_edit)
+        edit_layout.addRow(
+            "🏷️ Label (только это поле можно редактировать):", self.user_label_edit
+        )
 
         btn_save_label = QPushButton("💾 Сохранить изменения")
         btn_save_label.clicked.connect(self.save_user_label)
@@ -287,7 +313,9 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(edit_group)
 
         # Статус привязок
-        self.bind_status = QLabel("Информация о привязках будет здесь после загрузки данных из бэкенда")
+        self.bind_status = QLabel(
+            "Информация о привязках будет здесь после загрузки данных из бэкенда"
+        )
         self.bind_status.setStyleSheet("color: #7f8c8d; font-size: 11px; padding: 5px;")
         right_layout.addWidget(self.bind_status)
 
@@ -302,26 +330,55 @@ class MainWindow(QMainWindow):
         """ЗАГРУЗКА ДЕМО-ДАННЫХ ДЛЯ ОТОБРАЖЕНИЯ ИНТЕРФЕЙСА"""
         # Демо-пользователи
         demo_users = [
-            {"id": 1, "name": "Иван Петров", "label": "Студент группы А-21", "qr": "✅", "card": "❌"},
-            {"id": 2, "name": "Мария Сидорова", "label": "Студентка группы Б-22", "qr": "❌", "card": "✅"},
-            {"id": 3, "name": "Алексей Иванов", "label": "Преподаватель", "qr": "❌", "card": "❌"},
+            {
+                "id": 1,
+                "name": "Иван Петров",
+                "label": "Студент группы А-21",
+                "qr": "✅",
+                "card": "❌",
+            },
+            {
+                "id": 2,
+                "name": "Мария Сидорова",
+                "label": "Студентка группы Б-22",
+                "qr": "❌",
+                "card": "✅",
+            },
+            {
+                "id": 3,
+                "name": "Алексей Иванов",
+                "label": "Преподаватель",
+                "qr": "❌",
+                "card": "❌",
+            },
         ]
 
         for user in demo_users:
             item = QListWidgetItem(f"{user['name']}\n   └ {user['label']}")
-            item.setData(Qt.UserRole, user['id'])
+            item.setData(Qt.UserRole, user["id"])
             self.users_list.addItem(item)
 
         # Демо-события на сегодня
         today = QDate.currentDate().toString("yyyy-MM-dd")
         demo_events = [
-            {"name": "Лекция по Python", "time": "14:00", "duration": "90", "recurrence": "Еженедельно"},
-            {"name": "Семинар по Qt", "time": "16:00", "duration": "60", "recurrence": "Нет"},
+            {
+                "name": "Лекция по Python",
+                "time": "14:00",
+                "duration": "90",
+                "recurrence": "Еженедельно",
+            },
+            {
+                "name": "Семинар по Qt",
+                "time": "16:00",
+                "duration": "60",
+                "recurrence": "Нет",
+            },
         ]
 
         for event in demo_events:
             item = QListWidgetItem(
-                f"📌 {event['name']}\n   ⏰ {event['time']} ({event['duration']} мин)\n   🔄 {event['recurrence']}")
+                f"📌 {event['name']}\n   ⏰ {event['time']} ({event['duration']} мин)\n   🔄 {event['recurrence']}"
+            )
             self.events_list.addItem(item)
 
     # ========== ВСЕ МЕТОДЫ НИЖЕ — ПУСТЫЕ ЗАГЛУШКИ ДЛЯ БЭКЕНДА ==========
@@ -358,9 +415,12 @@ class MainWindow(QMainWindow):
 
     def delete_event(self):
         """Удаление события — ЗАПРОС ПОДТВЕРЖДЕНИЯ, ВЫЗОВ БЭКЕНДА ДЛЯ УДАЛЕНИЯ"""
-        reply = QMessageBox.question(self, "Подтверждение",
-                                     "Удалить выбранное событие?",
-                                     QMessageBox.Yes | QMessageBox.No)
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение",
+            "Удалить выбранное событие?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
         if reply == QMessageBox.Yes:
             print("[FRONTEND] Удаление события")  # Заглушка
             # ЗДЕСЬ БЭКЕНД ДОЛЖЕН УДАЛИТЬ СОБЫТИЕ
@@ -379,29 +439,43 @@ class MainWindow(QMainWindow):
         print(f"[FRONTEND] Выбран пользователь ID: {user_id}")
         # Демо-заполнение для отображения интерфейса
         self.user_name_label.setText(item.text().split("\n")[0])
-        self.user_label_edit.setText(item.text().split("└")[1].strip() if "└" in item.text() else "")
-        self.bind_status.setText("Информация из бэкенда появится здесь при подключении данных")
+        self.user_label_edit.setText(
+            item.text().split("└")[1].strip() if "└" in item.text() else ""
+        )
+        self.bind_status.setText(
+            "Информация из бэкенда появится здесь при подключении данных"
+        )
 
     def save_user_label(self):
         """Сохранение label — ЗДЕСЬ БЭКЕНД ДОЛЖЕН ОБНОВИТЬ LABEL ПОЛЬЗОВАТЕЛЯ"""
         new_label = self.user_label_edit.text()
         print(f"[FRONTEND] Сохранение label: {new_label}")  # Заглушка
         # ЗДЕСЬ БЭКЕНД ДОЛЖЕН ОБНОВИТЬ ПОЛЕ LABEL У ПОЛЬЗОВАТЕЛЯ
-        QMessageBox.information(self, "Успех", f"Label изменён на '{new_label}'\n(в бэкенде сохранится автоматически)")
+        QMessageBox.information(
+            self,
+            "Успех",
+            f"Label изменён на '{new_label}'\n(в бэкенде сохранится автоматически)",
+        )
 
     def bind_qr(self):
         """Привязка QR — ОТКРЫВАЕТ ОКНО С КАМЕРОЙ, ДАННЫЕ В БЭКЕНД"""
         print("[FRONTEND] Привязка QR-кода")
         # ЗДЕСЬ БЭКЕНД ДОЛЖЕН ОТКРЫТЬ КАМЕРУ И ПОЛУЧИТЬ QR
-        QMessageBox.information(self, "Привязка QR",
-                                "Открывается камера для сканирования QR-кода\n(здесь бэкенд обработает сканирование и сохранит QR)")
+        QMessageBox.information(
+            self,
+            "Привязка QR",
+            "Открывается камера для сканирования QR-кода\n(здесь бэкенд обработает сканирование и сохранит QR)",
+        )
 
     def bind_card(self):
         """Привязка карты — ПОКАЗЫВАЕТ УВЕДОМЛЕНИЕ, ДАННЫЕ В БЭКЕНД"""
         print("[FRONTEND] Привязка карты")
         # ЗДЕСЬ БЭКЕНД ДОЛЖЕН ПОКАЗАТЬ УВЕДОМЛЕНИЕ И ПОЛУЧИТЬ ID КАРТЫ
-        QMessageBox.information(self, "Привязка карты",
-                                "Приложите карту к считывателю\n(здесь бэкенд прочитает ID карты и сохранит)")
+        QMessageBox.information(
+            self,
+            "Привязка карты",
+            "Приложите карту к считывателю\n(здесь бэкенд прочитает ID карты и сохранит)",
+        )
 
 
 # ============= ЗАПУСК =============
@@ -457,3 +531,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
