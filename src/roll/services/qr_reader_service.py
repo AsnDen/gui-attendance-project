@@ -1,74 +1,97 @@
+import hashlib
 import logging
-import time
-from typing import Optional
+from typing import override
 
 import cv2
-from overrides import override
 
 from roll.core.interfaces.services import IIdentifierReaderService
 
 logger = logging.getLogger(__name__)
 
 
+class QRReaderError(Exception):
+    """Base QR reader exception."""
+
+
+class CameraUnavailableError(QRReaderError):
+    """Raised when camera cannot be opened."""
+
+
+class FrameCaptureError(QRReaderError):
+    """Raised when frame capture fails."""
+
+
 class QRIdentifierReaderService(IIdentifierReaderService):
-    SCAN_TIMEOUT_SECONDS = 30
-    RETRY_DELAY_SECONDS = 0.05
+    """
+    QR code reader service using OpenCV.
+    """
 
     def __init__(self, camera_id: int = 0):
         self.camera_id = camera_id
 
+        self._cap: cv2.VideoCapture | None = None
+        self._detector = cv2.QRCodeDetector()
+
+    @property
+    def is_open(self) -> bool:
+        return self._cap is not None and self._cap.isOpened()
+
+    def open(self) -> None:
+        """Open camera connection."""
+
+        if self.is_open:
+            return
+
+        logger.info("Opening camera %s", self.camera_id)
+
+        self._cap = cv2.VideoCapture(self.camera_id)
+
+        if not self._cap.isOpened():
+            self._cap.release()
+            self._cap = None
+
+            raise CameraUnavailableError(
+                f"Camera {self.camera_id} is unavailable"
+            )
+
+    def close(self) -> None:
+        """Release camera resources."""
+
+        if self._cap:
+            logger.info("Closing camera %s", self.camera_id)
+            self._cap.release()
+            self._cap = None
+
     @override
-    def read_identifier(self) -> str:
-        cap = self._open_camera()
+    def read_identifier(self) -> str | None:
+        """
+        Read single frame and extract QR hash.
+        """
 
-        if cap is None:
-            logger.error("Unable to open camera")
-            return ""
+        if not self.is_open:
+            raise QRReaderError("Camera is not opened")
 
-        detector = cv2.QRCodeDetector()
+        success, frame = self._cap.read()
 
-        try:
-            deadline = time.monotonic() + self.SCAN_TIMEOUT_SECONDS
+        if not success:
+            raise FrameCaptureError(
+                f"Failed to capture frame from camera {self.camera_id}"
+            )
 
-            while time.monotonic() < deadline:
-                success, frame = cap.read()
+        decoded_text, _, _ = self._detector.detectAndDecode(frame)
 
-                if not success:
-                    time.sleep(self.RETRY_DELAY_SECONDS)
-                    continue
+        if not decoded_text:
+            return None
 
-                decoded_text, _, _ = detector.detectAndDecode(frame)
+        normalized = decoded_text.strip()
 
-                if decoded_text:
-                    logger.info("QR code detected")
-                    return decoded_text.strip()
+        return hashlib.sha256(
+            normalized.encode("utf-8")
+        ).hexdigest()
 
-            logger.warning("QR scan timed out")
-            return ""
+    def __enter__(self):
+        self.open()
+        return self
 
-        except Exception:
-            logger.exception("Unexpected error during QR scan")
-            return ""
-
-        finally:
-            cap.release()
-
-    def _open_camera(self) -> Optional[cv2.VideoCapture]:
-        checked_ids = []
-
-        for cam_id in [self.camera_id, 0, 1, 2]:
-            if cam_id in checked_ids:
-                continue
-
-            checked_ids.append(cam_id)
-
-            cap = cv2.VideoCapture(cam_id)
-
-            if cap.isOpened():
-                logger.info("Camera %s opened", cam_id)
-                return cap
-
-            logger.debug("Camera %s unavailable", cam_id)
-            cap.release()
-
-        return None
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
