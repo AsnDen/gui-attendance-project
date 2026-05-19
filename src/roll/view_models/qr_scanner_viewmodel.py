@@ -1,153 +1,264 @@
 import logging
-from threading import Event, Thread
-from typing import Callable
+
+from PySide6.QtCore import (
+    QObject,
+    QThread,
+    QTimer,
+    Signal,
+    Slot,
+)
 
 from roll.services.qr_reader_service import (
+    CameraUnavailableError,
     QRIdentifierReaderService,
     QRReaderError,
-    CameraUnavailableError,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class QRScannerViewModel:
+class QRScannerWorker(QObject):
+    """Worker that periodically scans camera frames."""
+
+    qr_detected = Signal(str)
+
+    error_occurred = Signal(str)
+
+    camera_status_changed = Signal(bool)
+
+    finished = Signal()
+
     def __init__(
         self,
-        camera_id: int = 0,
-        scan_interval: float = 0.1,
+        scanner: QRIdentifierReaderService,
+        scan_interval_ms: int = 100,
     ):
-        self.camera_id = camera_id
-        self.scan_interval = scan_interval
+        """
+        Args:
+            scanner:
+                QR reader service instance.
 
-        self._scanner = QRIdentifierReaderService(camera_id)
+            scan_interval_ms:
+                Delay between frame scans in milliseconds.
+        """
 
-        self._scan_thread: Thread | None = None
-        self._stop_event = Event()
+        super().__init__()
 
-        self._is_scanning = False
+        self._scanner = scanner
 
         self._last_qr: str | None = None
 
-        self.on_qr_detected: Callable[[str], None] | None = None
-        self.on_scan_started: Callable[[], None] | None = None
-        self.on_scan_stopped: Callable[[], None] | None = None
-        self.on_error: Callable[[str], None] | None = None
-        self.on_camera_status_changed: Callable[[bool], None] | None = None
+        self._timer = QTimer()
+
+        self._timer.setInterval(scan_interval_ms)
+
+        self._timer.timeout.connect(self._scan)
+
+    @Slot()
+    def start(self) -> None:
+        """Start periodic QR scanning."""
+
+        logger.info(
+            "Starting QR scanner worker"
+        )
+
+        self._timer.start()
+
+    @Slot()
+    def stop(self) -> None:
+        """Stop periodic QR scanning."""
+
+        logger.info(
+            "Stopping QR scanner worker"
+        )
+
+        self._timer.stop()
+
+        self.finished.emit()
+
+    @Slot()
+    def _scan(self) -> None:
+        """Read and process single camera frame."""
+
+        try:
+            result = (
+                self._scanner.read_identifier()
+            )
+
+            self.camera_status_changed.emit(True)
+
+            if (
+                result is not None
+                and result != self._last_qr
+            ):
+                self._last_qr = result
+
+                logger.info(
+                    "QR detected: %s",
+                    result[:16],
+                )
+
+                self.qr_detected.emit(result)
+
+        except CameraUnavailableError as e:
+            logger.warning(
+                "Camera unavailable: %s",
+                e,
+            )
+
+            self.camera_status_changed.emit(False)
+
+            self.error_occurred.emit(str(e))
+
+        except QRReaderError as e:
+            logger.exception(
+                "QR scanner error"
+            )
+
+            self.error_occurred.emit(str(e))
+
+
+class QRScannerViewModel(QObject):
+    """ViewModel for QR scanning."""
+
+    qr_detected = Signal(str)
+
+    scan_started = Signal()
+
+    scan_stopped = Signal()
+
+    error_occurred = Signal(str)
+
+    camera_status_changed = Signal(bool)
+
+    def __init__(
+        self,
+        camera_id: int = 0,
+        scan_interval_ms: int = 100,
+    ):
+        """
+        Args:
+            camera_id:
+                OpenCV camera device identifier.
+
+            scan_interval_ms:
+                Delay between frame scans in milliseconds.
+        """
+
+        super().__init__()
+
+        self._scanner = (
+            QRIdentifierReaderService(
+                camera_id=camera_id,
+            )
+        )
+
+        self._scan_interval_ms = (
+            scan_interval_ms
+        )
+
+        self._thread: QThread | None = None
+
+        self._worker: QRScannerWorker | None = None
+
+        self._is_scanning = False
 
     @property
     def is_scanning(self) -> bool:
+        """Current scanning state."""
+
         return self._is_scanning
 
     def start_scanning(self) -> None:
-        """Start background QR scanning."""
+        """Start QR scanning thread."""
 
         if self._is_scanning:
-            logger.warning("Scanning already active")
-            return
-
-        try:
-            self._scanner.open()
-
-            self._notify_camera_status(True)
-
-        except CameraUnavailableError as e:
-            logger.error("Failed to open camera: %s", e)
-
-            self._notify_camera_status(False)
-            self._notify_error(str(e))
+            logger.warning(
+                "Scanning already active"
+            )
 
             return
 
-        self._stop_event.clear()
+        logger.info(
+            "Starting QR scanning"
+        )
+
+        self._thread = QThread()
+
+        self._worker = QRScannerWorker(
+            scanner=self._scanner,
+            scan_interval_ms=(
+                self._scan_interval_ms
+            ),
+        )
+
+        self._worker.moveToThread(
+            self._thread
+        )
+
+        self._thread.started.connect(
+            self._worker.start
+        )
+
+        self._worker.finished.connect(
+            self._thread.quit
+        )
+
+        self._worker.finished.connect(
+            self._worker.deleteLater
+        )
+
+        self._thread.finished.connect(
+            self._thread.deleteLater
+        )
+
+        self._worker.qr_detected.connect(
+            self.qr_detected.emit
+        )
+
+        self._worker.error_occurred.connect(
+            self.error_occurred.emit
+        )
+
+        self._worker.camera_status_changed.connect(
+            self.camera_status_changed.emit
+        )
+
+        self._thread.finished.connect(
+            self._on_thread_finished
+        )
+
+        self._thread.start()
 
         self._is_scanning = True
 
-        self._scan_thread = Thread(
-            target=self._scan_loop,
-            daemon=True,
-            name="qr-scanner-thread",
-        )
-
-        self._scan_thread.start()
-        logger.info("QR scanning started")
-        self._notify_scan_started()
+        self.scan_started.emit()
 
     def stop_scanning(self) -> None:
-        """Stop background scanning."""
+        """Stop QR scanning thread."""
+
         if not self._is_scanning:
             return
 
-        logger.info("Stopping QR scanner")
+        logger.info(
+            "Stopping QR scanning"
+        )
 
-        self._stop_event.set()
+        if self._worker:
+            self._worker.stop()
 
-        if (
-            self._scan_thread
-            and self._scan_thread.is_alive()
-            and self._scan_thread != Thread.current_thread()
-        ):
-            self._scan_thread.join(timeout=1.0)
+    @Slot()
+    def _on_thread_finished(self) -> None:
+        """Handle thread shutdown."""
 
-        self._cleanup()
+        logger.info(
+            "QR scanning stopped"
+        )
 
-    def _scan_loop(self) -> None:
-        """Background scanning loop."""
-        try:
-            while not self._stop_event.is_set():
+        self._thread = None
 
-                result = self._scanner.read_identifier()
+        self._worker = None
 
-                if result and result != self._last_qr:
-                    self._last_qr = result
-
-                    logger.info(
-                        "QR detected:",
-                        result[:16],
-                    )
-
-                    self._notify_qr_detected(result)
-
-                self._stop_event.wait(self.scan_interval)
-
-        except QRReaderError as e:
-            logger.exception("QR scanner error")
-
-            self._notify_error(str(e))
-            self._notify_camera_status(False)
-
-        except Exception:
-            logger.exception("Unexpected scanner error")
-            self._notify_error(
-                "Unexpected scanner error occurred"
-            )
-        finally:
-            self._cleanup()
-
-    def _cleanup(self) -> None:
-        self._scanner.close()
         self._is_scanning = False
-        self._notify_scan_stopped()
 
-        logger.info("QR scanning stopped")
-
-
-    def _notify_qr_detected(self, qr_hash: str) -> None:
-        if self.on_qr_detected:
-            self.on_qr_detected(qr_hash)
-
-    def _notify_scan_started(self) -> None:
-        if self.on_scan_started:
-            self.on_scan_started()
-
-    def _notify_scan_stopped(self) -> None:
-        if self.on_scan_stopped:
-            self.on_scan_stopped()
-
-    def _notify_error(self, message: str) -> None:
-        if self.on_error:
-            self.on_error(message)
-
-    def _notify_camera_status(self, connected: bool) -> None:
-        if self.on_camera_status_changed:
-            self.on_camera_status_changed(connected)
+        self.scan_stopped.emit()

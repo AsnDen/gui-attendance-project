@@ -4,7 +4,9 @@ from typing import override
 
 import cv2
 
-from roll.core.interfaces.services import IIdentifierReaderService
+from roll.core.interfaces.services import (
+    IIdentifierReaderService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,77 +23,101 @@ class FrameCaptureError(QRReaderError):
     """Raised when frame capture fails."""
 
 
-class QRIdentifierReaderService(IIdentifierReaderService):
-    """
-    QR code reader service using OpenCV.
-    """
+class QRIdentifierReaderService(
+    IIdentifierReaderService
+):
+    """QR code reader service using OpenCV."""
 
     def __init__(self, camera_id: int = 0):
+        """
+        Args:
+            camera_id:
+                OpenCV camera device identifier.
+
+                Usually:
+                - 0 -> default camera
+                - 1 -> secondary camera
+                - 2+ -> external cameras
+
+                Available ids depend on OS and hardware.
+        """
+
         self.camera_id = camera_id
 
-        self._cap: cv2.VideoCapture | None = None
         self._detector = cv2.QRCodeDetector()
 
-    @property
-    def is_open(self) -> bool:
-        return self._cap is not None and self._cap.isOpened()
+    def _open(self) -> cv2.VideoCapture:
+        """
+        Open camera connection.
 
-    def open(self) -> None:
-        """Open camera connection."""
+        Raises:
+            CameraUnavailableError:
+                If camera cannot be opened.
+        """
 
-        if self.is_open:
-            return
+        logger.info(
+            "Opening camera %s",
+            self.camera_id,
+        )
 
-        logger.info("Opening camera %s", self.camera_id)
+        cap = cv2.VideoCapture(self.camera_id)
 
-        self._cap = cv2.VideoCapture(self.camera_id)
+        if not cap.isOpened():
+            cap.release()
 
-        if not self._cap.isOpened():
-            self._cap.release()
-            self._cap = None
+            logger.warning(
+                "Camera %s is unavailable",
+                self.camera_id,
+            )
 
             raise CameraUnavailableError(
                 f"Camera {self.camera_id} is unavailable"
             )
 
-    def close(self) -> None:
+        return cap
+
+    def _close(
+        self,
+        cap: cv2.VideoCapture,
+    ) -> None:
         """Release camera resources."""
 
-        if self._cap:
-            logger.info("Closing camera %s", self.camera_id)
-            self._cap.release()
-            self._cap = None
+        logger.info(
+            "Closing camera %s",
+            self.camera_id,
+        )
+
+        cap.release()
 
     @override
     def read_identifier(self) -> str | None:
-        """
-        Read single frame and extract QR hash.
-        """
+        """Read single frame and extract QR hash."""
 
-        if not self.is_open:
-            raise QRReaderError("Camera is not opened")
+        cap = self._open()
 
-        success, frame = self._cap.read()
+        try:
+            success, frame = cap.read()
 
-        if not success:
-            raise FrameCaptureError(
-                f"Failed to capture frame from camera {self.camera_id}"
+            if not success:
+                raise FrameCaptureError(
+                    "Failed to capture frame "
+                    f"from camera {self.camera_id}"
+                )
+
+            decoded_text, _, _ = (
+                self._detector.detectAndDecode(frame)
             )
 
-        decoded_text, _, _ = self._detector.detectAndDecode(frame)
+            if not decoded_text:
+                return None
 
-        if not decoded_text:
-            return None
+            normalized = decoded_text.strip()
 
-        normalized = decoded_text.strip()
+            logger.info("QR code detected")
 
-        return hashlib.sha256(
-            normalized.encode("utf-8")
-        ).hexdigest()
+            return hashlib.sha256(
+                normalized.encode("utf-8")
+            ).hexdigest()
 
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        finally:
+            self._close(cap)

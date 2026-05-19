@@ -131,7 +131,7 @@ class IIdentifierReaderService(ABC):
     """Interface for reading identifier data."""
 
     @abstractmethod
-    def read_identifier(self) -> str:
+    def read_identifier(self) -> str | None:
         """Reads identifier data.
 
         Returns sha256 of data read.
