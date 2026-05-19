@@ -9,20 +9,17 @@ logger = logging.getLogger(__name__)
 
 class PersonService(IPersonService):
     def __init__(self, repo: IPersonRepository) -> None:
-        """Initializes person service with person repository.
-
-        Sends log message on init end
-        """
+        """Initializes person service with person repository."""
         self.repo: IPersonRepository = repo
         logger.info("Initialized person service")
 
     @override
-    def add_person(self, label: str, description: str | None = None) -> None:
+    def add_person(self, label: str, description: str = "") -> int:
         if label == "":
             raise EmptyLabelError
 
         person = PersonUpdateDTO(label=label, description=description)
-        self.repo.add(person)
+        return self.repo.add(person)
 
     @override
     def get_person(self, person_id: int) -> BasePerson:
@@ -38,7 +35,17 @@ class PersonService(IPersonService):
         return self.repo.get_all()
 
     @override
-    def update_person(self, person_id: int, person: PersonUpdateDTO) -> None:
+    def update_person(
+        self,
+        person_id: int,
+        *,
+        label: str | None = None,
+        description: str | None = None,
+    ) -> None:
+        if label == "":
+            raise EmptyLabelError
+
+        person = PersonUpdateDTO(label=label, description=description)
         self.repo.update(person_id, person)
 
     @override

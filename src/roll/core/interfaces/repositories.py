@@ -31,21 +31,36 @@ class IAttendanceRepository(ABC):
         """Finds and returns attendance by it's id.
 
         Returns None if attendance is not found.
+
+        Args:
+            attendance_id: id of an attendance
         """
 
     @abstractmethod
     def add(self, attendance: AttendanceUpdateDTO) -> None:
-        """Saves new attendance in repository."""
+        """Saves new attendance in repository.
+
+        Args:
+            attendance: All DTO fields of attendance must not be None
+        """
 
     @abstractmethod
     def update(self, attendance_id: int, attendance: AttendanceUpdateDTO) -> None:
-        """Updates existing attendance info."""
+        """Updates existing attendance info.
+
+        Args:
+            attendance_id: id of an attendance
+            attendance: DTO with fields that may be empty.
+        """
 
     @abstractmethod
     def delete(self, attendance_id: int) -> bool:
         """Deletes attendance from repository.
 
         Returns bool if operation is successfull.
+
+        Args:
+            attendance_id: id of an attendance
         """
 
 
@@ -61,7 +76,7 @@ class IEventRepository(ABC):
 
     @abstractmethod
     def get_all(self) -> tuple[BaseEvent, ...]:
-        """Returns tuple of all saved eventa."""
+        """Returns tuple of all saved event."""
 
     @abstractmethod
     def add(self, event: EventUpdateDTO) -> None:
@@ -86,26 +101,48 @@ class IPersonRepository(ABC):
     def get(self, person_id: int) -> BasePerson | None:
         """Finds and returns person by it's id.
 
-        Returns None if person is not found.
+        Returns:
+            None if person is not found.
+            BasePerson if person is found.
         """
 
     @abstractmethod
     def get_all(self) -> tuple[BasePerson, ...]:
-        """Returns tuple of all saved persons."""
+        """Finds all persons saved in repository.
+
+        Returns:
+            tuple: all saved persons.
+        """
 
     @abstractmethod
-    def add(self, person: PersonUpdateDTO) -> None:
-        """Saves new person in repository."""
+    def add(self, person: PersonUpdateDTO) -> int:
+        """Saves new person in repository.
+
+        Args:
+            person: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
+        """
 
     @abstractmethod
     def update(self, person_id: int, person: PersonUpdateDTO) -> None:
-        """Updates existing person info."""
+        """Updates person info.
+
+        Args:
+            person_id: id of person.
+            person: DTO with fields that may be empty.
+        """
 
     @abstractmethod
     def delete(self, person_id: int) -> bool:
         """Deletes person from repository.
 
-        Returns bool if operation is successfull.
+        Args:
+            person_id: id of person.
+
+        Returns:
+            bool: if operation is successfull or not.
         """
 
 

@@ -1,7 +1,7 @@
 import logging
 from typing import cast, override
 
-from PySide6.QtSql import QSqlQuery
+from PySide6.QtSql import QSqlDatabase, QSqlQuery
 
 from roll.core import BasePerson, IPersonRepository, Person, PersonUpdateDTO
 from roll.repositories.base_qsqlite_repository import BaseQtSQLiteRepository
@@ -11,16 +11,24 @@ logger = logging.getLogger(__name__)
 
 
 class PersonRepository(IPersonRepository, BaseQtSQLiteRepository):
-    def __init__(self) -> None:
-        """Log message on repository init."""
+    def __init__(self, db: QSqlDatabase) -> None:
+        """Initializes person repository with database.
+
+        Args:
+            db: QT SQL database
+        """
         logger.info("Initialized person repository")
+        self.db: QSqlDatabase = db
 
     @override
     def get(self, person_id: int) -> BasePerson | None:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
-        SELECT person_id, label, description
+        SELECT
+            person_id,
+            label,
+            description
         FROM persons
         WHERE person_id = (?);
         """
@@ -40,11 +48,14 @@ class PersonRepository(IPersonRepository, BaseQtSQLiteRepository):
 
     @override
     def get_all(self) -> tuple[BasePerson, ...]:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
-        SELECT person_id, label, description
-        FROM persons;
+        SELECT
+            person_id,
+            label,
+            description
+        FROM persons
         """
 
         if not query.prepare(sql):
@@ -61,50 +72,46 @@ class PersonRepository(IPersonRepository, BaseQtSQLiteRepository):
         return tuple(persons)
 
     @override
-    def add(self, person: PersonUpdateDTO) -> None:
+    def add(self, person: PersonUpdateDTO) -> int:
         if not person.label:
             raise DTOValueError
 
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         INSERT INTO persons (label, description)
-        VALUES (:label, NULLIF(:description, ''))
+        VALUES (:label, :description);
         """
 
         if not query.prepare(sql):
             self._raise_on_prepare(query)
 
-        query.bindValue("label", person.label)
-        query.bindValue("description", person.description)
+        query.bindValue(":label", person.label)
+        query.bindValue(":description", person.description)
 
         if not query.exec():
             self._raise_on_exec(query)
 
+        return cast("int", query.lastInsertId())
+
     @override
     def update(self, person_id: int, person: PersonUpdateDTO) -> None:
-        if person.label == "":
-            raise DTOValueError
-
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         UPDATE persons
-        SET label = COALESCE(:label, label),
-            description = CASE
-                WHEN :description = '' THEN NULL
-                WHEN :description IS NULL THEN description
-                ELSE :description
-            END
+        SET
+            label = COALESCE(:label, label),
+            description = COALESCE(:description, description)
         WHERE person_id = :id;
         """
 
         if not query.prepare(sql):
             self._raise_on_prepare(query)
 
-        query.bindValue("label", person.label)
-        query.bindValue("description", person.description)
-        query.bindValue("id", person_id)
+        query.bindValue(":label", person.label)
+        query.bindValue(":description", person.description)
+        query.bindValue(":id", person_id)
 
         if not query.exec():
             self._raise_on_exec(query)
@@ -114,11 +121,11 @@ class PersonRepository(IPersonRepository, BaseQtSQLiteRepository):
 
     @override
     def delete(self, person_id: int) -> bool:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         DELETE FROM persons
-        WHERE person_id = (?)
+        WHERE person_id = (?);
         """
 
         if not query.prepare(sql):

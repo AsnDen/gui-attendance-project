@@ -30,7 +30,7 @@ class BasePerson(ABC):
 
     person_id: int
     label: str
-    description: str | None = None
+    description: str = ""
 
 
 class Person(BasePerson):
