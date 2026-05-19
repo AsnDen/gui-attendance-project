@@ -65,6 +65,7 @@ reportUnknownMemberType = false
 reportMissingTypeArgument = false
 reportUnusedParameter = false
 reportGeneralTypeIssues = false
+reportAny = false
 extraPaths = ["."]
 
 [tool.pytest.ini_options]

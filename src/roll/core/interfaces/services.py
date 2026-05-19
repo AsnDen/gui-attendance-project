@@ -10,7 +10,6 @@ if TYPE_CHECKING:
         BasePerson,
         EventUpdateDTO,
         IdentifierUpdateDTO,
-        PersonUpdateDTO,
     )
 
 
@@ -19,23 +18,70 @@ class IPersonService(ABC):
 
     @abstractmethod
     def get_person(self, person_id: int) -> BasePerson:
-        pass
+        """Gets person by its id.
+
+        Args:
+            person_id: valid person id.
+
+        Returns:
+            BasePerson: valid person data.
+
+        Raises:
+            PersonNotFoundError: person_id is invalid.
+        """
 
     @abstractmethod
     def get_all_persons(self) -> tuple[BasePerson, ...]:
-        pass
+        """Gets all persons.
+
+        Returns:
+            tuple of BasePerson: all saved persons.
+        """
 
     @abstractmethod
-    def add_person(self, label: str, description: str | None = None) -> None:
-        pass
+    def add_person(self, label: str, description: str) -> int:
+        """Saves person data.
+
+        Args:
+            label: person label.
+            description: person description.
+
+        Returns:
+            int: saved user id.
+
+        Raises:
+            EmptyLabelError: if label is empty string.
+        """
 
     @abstractmethod
-    def update_person(self, person_id: int, person: PersonUpdateDTO) -> None:
-        pass
+    def update_person(
+        self,
+        person_id: int,
+        *,
+        label: str | None = None,
+        description: str | None = None,
+    ) -> None:
+        """Updates person data.
+
+        Args:
+            person_id: valid person id.
+            label: person label. Not updated if None.
+            description: person description. Not updated if None.
+
+        Raises:
+            EmptyLabelError: if label is empty string.
+        """
 
     @abstractmethod
     def delete_person(self, person_id: int) -> None:
-        pass
+        """Deletes person.
+
+        Args:
+            person_id: valid person id.
+
+        Raises:
+            PersonNotFoundError: if label is empty string.
+        """
 
 
 class IEventService(ABC):
@@ -75,7 +121,7 @@ class IAttendanceService(ABC):
 
     @abstractmethod
     def add_attendance(
-        self, person_id: int, attendance_id: int, *, is_present: bool = False
+        self, person_id: int, event_id: int, *, is_present: bool = False
     ) -> None:
         pass
 
