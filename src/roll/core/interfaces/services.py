@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -8,7 +9,6 @@ if TYPE_CHECKING:
         BaseEvent,
         BaseIdentifier,
         BasePerson,
-        EventUpdateDTO,
         IdentifierUpdateDTO,
     )
 
@@ -89,23 +89,84 @@ class IEventService(ABC):
 
     @abstractmethod
     def get_event(self, event_id: int) -> BaseEvent:
-        pass
+        """Gets event by its id.
+
+        Args:
+            event_id: valid event id.
+
+        Returns:
+            BaseEvent: valid event data.
+
+        Raises:
+            EventNotFoundError: event_id is invalid.
+        """
 
     @abstractmethod
     def get_all_events(self) -> tuple[BaseEvent, ...]:
-        pass
+        """Gets all events.
+
+        Returns:
+            tuple of BaseEvent: all saved events.
+        """
 
     @abstractmethod
-    def add_event(self, label: str, description: str | None = None) -> None:
-        pass
+    def add_event(
+        self,
+        label: str,
+        start_time: datetime,
+        duration: timedelta,
+        description: str = "",
+    ) -> int:
+        """Saves event data.
+
+        Args:
+            label: event label.
+            start_time: event start time.
+            duration: event duration.
+            description: event description.
+
+        Returns:
+            int: saved event id.
+
+        Raises:
+            EmptyLabelError: if label is empty string.
+            ZeroDurationError: if duration.total_seconds() == 0
+        """
 
     @abstractmethod
-    def update_event(self, event_id: int, event: EventUpdateDTO) -> None:
-        pass
+    def update_event(
+        self,
+        event_id: int,
+        *,
+        label: str | None = None,
+        start_time: datetime | None = None,
+        duration: timedelta | None = None,
+        description: str | None = None,
+    ) -> None:
+        """Updates event data.
+
+        Args:
+            event_id: valid event id.
+            label: event label. Not updated if None.
+            start_time: event start time. Not updated if None.
+            duration: event duration. Not updated if None.
+            description: event description. Not updated if None.
+
+        Raises:
+            EmptyLabelError: if label is empty string.
+            ZeroDurationError: if duration.total_seconds() == 0
+        """
 
     @abstractmethod
     def delete_event(self, event_id: int) -> None:
-        pass
+        """Deletes event.
+
+        Args:
+            event_id: valid event id.
+
+        Raises:
+            EventNotFoundError: event_id is invalid.
+        """
 
 
 class IAttendanceService(ABC):

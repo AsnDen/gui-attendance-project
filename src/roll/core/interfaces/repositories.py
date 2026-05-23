@@ -71,26 +71,51 @@ class IEventRepository(ABC):
     def get(self, event_id: int) -> BaseEvent | None:
         """Finds and returns event by it's id.
 
-        Returns None if event is not found.
+        Args:
+            event_id: id of an event
+
+        Returns:
+            None if event is not found.
+            BaseEvent if event is found.
         """
 
     @abstractmethod
     def get_all(self) -> tuple[BaseEvent, ...]:
-        """Returns tuple of all saved event."""
+        """Finds all events saved in repository.
+
+        Returns:
+            tuple: all saved events.
+        """
 
     @abstractmethod
-    def add(self, event: EventUpdateDTO) -> None:
-        """Saves new event in repository."""
+    def add(self, event: EventUpdateDTO) -> int:
+        """Saves new event in repository.
+
+        Args:
+            event: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
+        """
 
     @abstractmethod
     def update(self, event_id: int, event: EventUpdateDTO) -> None:
-        """Updates existing event info."""
+        """Updates event info.
+
+        Args:
+            event_id: id of an event.
+            event: DTO with fields that may be empty.
+        """
 
     @abstractmethod
     def delete(self, event_id: int) -> bool:
         """Deletes event from repository.
 
-        Returns bool if operation is successfull.
+        Args:
+            event_id: id of event.
+
+        Returns:
+            bool: if operation is successfull or not.
         """
 
 
@@ -100,6 +125,9 @@ class IPersonRepository(ABC):
     @abstractmethod
     def get(self, person_id: int) -> BasePerson | None:
         """Finds and returns person by it's id.
+
+        Args:
+            person_id: id of person.
 
         Returns:
             None if person is not found.

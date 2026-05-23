@@ -9,10 +9,7 @@ Provides:
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: TC003 # for pytest to work properly
 
 
 @dataclass(frozen=True)
@@ -38,7 +35,7 @@ class BaseEvent(ABC):
     label: str
     start_time: datetime
     duration: timedelta
-    description: str | None = None
+    description: str = ""
 
 
 class Event(BaseEvent):

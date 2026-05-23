@@ -41,6 +41,7 @@ unfixable = []
     "ANN",
     "PLR2004",
     "ARG001",
+    "PLR0913",
 ]
 
 [tool.ruff.lint.pydocstyle]
