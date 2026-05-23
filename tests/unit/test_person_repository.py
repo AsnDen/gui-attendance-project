@@ -1,52 +1,11 @@
-import sys
 from typing import cast
 
 import pytest
-from PySide6.QtSql import QSqlDatabase, QSqlQuery
-from PySide6.QtWidgets import QApplication
+from PySide6.QtSql import QSqlQuery
 
 from src.roll.core import PersonUpdateDTO
 from src.roll.repositories.person_repository import PersonRepository
 from tests.conftest import VALID_PERSON_DATA
-
-TABLE_QUERY = """
-CREATE TABLE persons (
-    person_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    label TEXT NOT NULL CHECK (trim(label) != ''),
-    description TEXT
-);
-"""
-
-
-@pytest.fixture(scope="session")
-def qapp():
-    app = QApplication.instance()
-
-    if app is None:
-        app = QApplication(sys.argv)
-
-    return app
-
-
-@pytest.fixture(scope="class", autouse=True)
-def database(qapp):
-    db = QSqlDatabase.addDatabase("QSQLITE")
-    db.setDatabaseName(":memory:")
-
-    if not db.open():
-        pytest.fail("Unable to open database.")
-
-    query = QSqlQuery(db)
-
-    if not query.exec(TABLE_QUERY):
-        pytest.fail(query.lastError().text())
-
-    yield db
-
-    db.close()
-
-    del query
-    del db
 
 
 class TestPersonRepository:
