@@ -4,7 +4,7 @@ import pytest
 from PySide6.QtSql import QSqlQuery
 
 from src.roll.core import PersonUpdateDTO
-from src.roll.repositories.person_repository import PersonRepository
+from src.roll.repositories import PersonRepository
 from tests.conftest import VALID_PERSON_DATA
 
 

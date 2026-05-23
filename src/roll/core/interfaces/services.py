@@ -47,7 +47,7 @@ class IPersonService(ABC):
             description: person description.
 
         Returns:
-            int: saved user id.
+            int: saved person id.
 
         Raises:
             EmptyLabelError: if label is empty string.
