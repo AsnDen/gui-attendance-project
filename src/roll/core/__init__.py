@@ -3,6 +3,7 @@
 from roll.core.entities import (
     Attendance,
     AttendanceShema,
+    AttendanceStatus,
     AttendanceUpdateDTO,
     BaseAttendance,
     BaseEvent,
@@ -38,6 +39,7 @@ from roll.core.setup_logging import setup_logging
 __all__ = [
     "Attendance",
     "AttendanceShema",
+    "AttendanceStatus",
     "AttendanceUpdateDTO",
     "BaseAttendance",
     "BaseEvent",

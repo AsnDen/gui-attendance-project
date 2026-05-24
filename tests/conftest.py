@@ -47,6 +47,7 @@ TABLE_QUERIES = [
         ON DELETE CASCADE
     );
     """,
+    "PRAGMA foreign_keys = ON;",
 ]
 
 

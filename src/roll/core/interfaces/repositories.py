@@ -30,18 +30,34 @@ class IAttendanceRepository(ABC):
     def get(self, attendance_id: int) -> BaseAttendance | None:
         """Finds and returns attendance by it's id.
 
-        Returns None if attendance is not found.
-
         Args:
-            attendance_id: id of an attendance
+            attendance_id: id of an attendance.
+
+        Returns:
+            None if attendance is not found.
+            BaseAttendnace if attendance is found.
         """
 
     @abstractmethod
-    def add(self, attendance: AttendanceUpdateDTO) -> None:
+    def get_by_event(self, event_id: int) -> tuple[BaseAttendance, ...]:
+        """Finds and returns attendance by event id.
+
+        Args:
+            event_id: id of an event.
+
+        Returns:
+            tuple of BaseAttendance: all attendances that lincked to event.
+        """
+
+    @abstractmethod
+    def add(self, attendance: AttendanceUpdateDTO) -> int:
         """Saves new attendance in repository.
 
         Args:
-            attendance: All DTO fields of attendance must not be None
+            attendance: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
         """
 
     @abstractmethod
@@ -49,7 +65,7 @@ class IAttendanceRepository(ABC):
         """Updates existing attendance info.
 
         Args:
-            attendance_id: id of an attendance
+            attendance_id: id of an attendance.
             attendance: DTO with fields that may be empty.
         """
 
@@ -57,10 +73,11 @@ class IAttendanceRepository(ABC):
     def delete(self, attendance_id: int) -> bool:
         """Deletes attendance from repository.
 
-        Returns bool if operation is successfull.
-
         Args:
-            attendance_id: id of an attendance
+            attendance_id: id of an attendance.
+
+        Returns:
+            bool: if operation is successfull or not.
         """
 
 

@@ -17,6 +17,7 @@ Provides:
 from roll.core.entities.attendance import (
     Attendance,
     AttendanceShema,
+    AttendanceStatus,
     AttendanceUpdateDTO,
     BaseAttendance,
 )
@@ -34,6 +35,7 @@ from roll.core.entities.person import BasePerson, Person, PersonShema, PersonUpd
 __all__ = [
     "Attendance",
     "AttendanceShema",
+    "AttendanceStatus",
     "AttendanceUpdateDTO",
     "BaseAttendance",
     "BaseEvent",

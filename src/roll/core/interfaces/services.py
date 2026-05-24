@@ -2,9 +2,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from roll.core.entities import AttendanceStatus
+
 if TYPE_CHECKING:
     from roll.core.entities import (
-        AttendanceUpdateDTO,
         BaseAttendance,
         BaseEvent,
         BaseIdentifier,
@@ -174,27 +175,76 @@ class IAttendanceService(ABC):
 
     @abstractmethod
     def get_attendance(self, attendance_id: int) -> BaseAttendance:
-        pass
+        """Gets attendance by its id.
+
+        Args:
+            attendance_id: valid attendance id.
+
+        Returns:
+            BaseAttendance: valid attendance data.
+
+        Raises:
+            AttendanceNotFoundError: attendance_id is invalid.
+        """
 
     @abstractmethod
     def get_event_attendance(self, event_id: int) -> tuple[BaseAttendance, ...]:
-        pass
+        """Gets attendances by event id.
+
+        Args:
+            event_id: valid event id.
+
+        Returns:
+            tuple of BaseAttendance: valid attendance data.
+
+        Raises:
+            EventNotFoundError: event_id is invalid.
+        """
 
     @abstractmethod
     def add_attendance(
-        self, person_id: int, event_id: int, *, is_present: bool = False
-    ) -> None:
-        pass
+        self,
+        person_id: int,
+        event_id: int,
+        status: AttendanceStatus = AttendanceStatus.ABSENT,
+    ) -> int:
+        """Saves attendance data.
+
+        Args:
+            person_id: id of person who attend event.
+            event_id: if of event.
+            status: attendance status.
+
+        Returns:
+            int: saved attendance id.
+
+        Raises:
+            PersonNotFoundError: if person does not exist.
+            EventNotFoundError: if event does not exist.
+        """
 
     @abstractmethod
-    def update_attendance(
-        self, attendance_id: int, attendance: AttendanceUpdateDTO
-    ) -> None:
-        pass
+    def update_attendance(self, attendance_id: int, status: AttendanceStatus) -> None:
+        """Updates attendance data.
+
+        Args:
+            attendance_id: valid attendance id.
+            status: new attendance status.
+
+        Raises:
+            AttendanceNotFoundError: if attendance_id is invalid.
+        """
 
     @abstractmethod
     def delete_attendance(self, attendance_id: int) -> None:
-        pass
+        """Deletes attendance.
+
+        Args:
+            attendance_id: valid attendance id.
+
+        Raises:
+            AttendanceNotFoundError: attendance_id is invalid.
+        """
 
 
 class IIdentifierService(ABC):
