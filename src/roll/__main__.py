@@ -12,6 +12,7 @@ from roll.repositories import (
 )
 from roll.services import AttendanceService, EventService, PersonService
 from roll.ui import MainWindow
+from roll.view_models import ViewModelFactory
 
 
 def main() -> None:
@@ -35,7 +36,13 @@ def main() -> None:
     event_service = EventService(event_repo)
     attendance_serivce = AttendanceService(attendance_repo, person_repo, event_repo)
 
-    window = MainWindow()
+    view_model_factory = ViewModelFactory(
+        attendance_service=attendance_serivce,
+        person_service=person_service,
+        event_service=event_service,
+    )
+
+    window = MainWindow(view_model_factory)
     window.show()
 
     sys.exit(app.exec())

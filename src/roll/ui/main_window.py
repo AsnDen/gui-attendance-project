@@ -4,11 +4,14 @@ from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QWidget
 
 from roll.ui.panels import CalendarPanel, DayEventsPanel, ScannerPanel
+from roll.view_models import ViewModelFactory
 
 
 class MainWindow(QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, view_model_factory: ViewModelFactory) -> None:
         super().__init__()
+
+        self._view_model_factory: ViewModelFactory = view_model_factory
         self._setup_ui()
         self._setup_connections()
 
@@ -29,7 +32,8 @@ class MainWindow(QMainWindow):
         self._scanner_panel: ScannerPanel = ScannerPanel()
         main_layout.addWidget(self._scanner_panel, 1)
 
-        self._calendar_panel: CalendarPanel = CalendarPanel()
+        calendar_view_model = self._view_model_factory.create_calendar_view_moder()
+        self._calendar_panel: CalendarPanel = CalendarPanel(calendar_view_model)
         main_layout.addWidget(self._calendar_panel)
 
         menubar = self.menuBar()
