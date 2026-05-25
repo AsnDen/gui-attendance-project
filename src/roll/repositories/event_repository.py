@@ -65,7 +65,7 @@ class EventRepository(IEventRepository, BaseQtSQLiteRepository):
 
         events: list[BaseEvent] = []
 
-        if query.next():
+        while query.next():
             events += [self._build_event(query)]
 
         return tuple(events)
