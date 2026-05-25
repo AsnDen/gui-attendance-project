@@ -5,6 +5,7 @@ description = "GUI app for recording attendance events."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "opencv-python>=4.13.0.92",
     "pyside6>=6.11.0",
 ]
 
