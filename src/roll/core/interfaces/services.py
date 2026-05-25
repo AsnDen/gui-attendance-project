@@ -10,7 +10,6 @@ if TYPE_CHECKING:
         BaseEvent,
         BaseIdentifier,
         BasePerson,
-        IdentifierUpdateDTO,
     )
 
 
@@ -252,25 +251,69 @@ class IIdentifierService(ABC):
 
     @abstractmethod
     def get_identifier(self, identifier_id: int) -> BaseIdentifier:
-        pass
+        """Gets identifier by its id.
+
+        Args:
+            identifier_id: valid identigier id.
+
+        Returns:
+            BaseIdentifier: valid identifier data.
+
+        Raises:
+            IdentifierNotFoundError: identigier_id is invalid.
+        """
 
     @abstractmethod
     def get_person_identifiers(self, person_id: int) -> tuple[BaseIdentifier, ...]:
-        pass
+        """Gets identifiers by person id.
+
+        Args:
+            person_id: valid person id.
+
+        Returns:
+            tuple of BaseIdentifier: valid identifier data.
+
+        Raises:
+            PersonNotFoundError: person_id is invalid.
+        """
 
     @abstractmethod
     def add_identifier(self, hash_value: str, person_id: int) -> int:
-        pass
+        """Saves identifier data.
+
+        Args:
+            hash_value: encrypted value of data.
+            person_id: id of person who owns identifier.
+
+        Returns:
+            int: saved attendance id.
+
+        Raises:
+            PersonNotFoundError: if person does not exist.
+        """
 
     @abstractmethod
-    def update_identifier(
-        self, identifier_id: int, identifier: IdentifierUpdateDTO
-    ) -> None:
-        pass
+    def update_identifier(self, identifier_id: int, hash_value: str) -> None:
+        """Updates identifier data.
+
+        Args:
+            identifier_id: valid identifier id.
+            hash_value: new hash value.
+
+        Raises:
+            IdentifierNotFoundError: if identifier_id is invalid.
+        """
 
     @abstractmethod
     def delete_identifier(self, identifier_id: int) -> None:
-        pass
+        """Deletes identifier.
+
+        Args:
+            identifier_id: valid identifier id.
+
+        Raises:
+            identifierNotFoundError: identifier_id is invalid.
+        """
 
 
 class IVerificationService(ABC):
