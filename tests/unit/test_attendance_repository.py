@@ -163,7 +163,7 @@ class TestAttendanceRepository:
         assert found.event_id == event_id
         assert found.status == status
 
-    def test_get_all_attendances(self, repository: AttendanceRepository):
+    def test_get_event_attendances(self, repository: AttendanceRepository):
         person_id_1 = event_id_1 = 1
         person_id_2 = event_id_2 = 2
         person_id_3 = 1
@@ -184,9 +184,15 @@ class TestAttendanceRepository:
         a_id_2 = repository.add(new_attendance_2)
         a_id_3 = repository.add(new_attendance_3)
 
-        found_1 = repository.get(a_id_1)
-        found_2 = repository.get(a_id_2)
-        found_3 = repository.get(a_id_3)
+        attendances_1 = repository.get_by_event(1)
+        attendances_2 = repository.get_by_event(2)
+
+        assert len(attendances_1) == 1
+        assert len(attendances_2) == 2
+
+        found_1 = attendances_1[0]
+        found_2 = attendances_2[0]
+        found_3 = attendances_2[1]
 
         assert found_1 is not None
         assert found_1.attendance_id == a_id_1
