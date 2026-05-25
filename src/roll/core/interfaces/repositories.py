@@ -202,7 +202,7 @@ class IIdentifierRepository(ABC):
         """
 
     @abstractmethod
-    def add(self, identifier: IdentifierUpdateDTO) -> None:
+    def add(self, identifier: IdentifierUpdateDTO) -> int:
         """Saves new identifier in repository."""
 
     @abstractmethod

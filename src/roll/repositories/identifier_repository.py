@@ -47,7 +47,7 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
         return None
 
     @override
-    def add(self, identifier: IdentifierUpdateDTO) -> None:
+    def add(self, identifier: IdentifierUpdateDTO) -> int:
         if not (
             identifier.hash_value
             and identifier.person_id
@@ -71,6 +71,8 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
 
         if not query.exec():
             self._raise_on_exec(query)
+
+        return cast("int", query.lastInsertId())
 
     @override
     def update(self, identifier_id: int, identifier: IdentifierUpdateDTO) -> None:
