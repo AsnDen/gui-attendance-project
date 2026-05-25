@@ -1,20 +1,36 @@
-from PySide6.QtCore import Qt, Signal
+from datetime import time as dt_time
+from datetime import timedelta
+from typing import cast
+
+from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
     QCalendarWidget,
     QFrame,
+    QInputDialog,
     QLabel,
     QListWidget,
+    QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
+
+from roll.core import EventTemplate, ICalendarPanelViewModel
 
 
 class CalendarPanel(QFrame):
     date_selected: Signal = Signal(str)
 
-    def __init__(self) -> None:
+    def __init__(self, view_model: ICalendarPanelViewModel) -> None:
         super().__init__()
+        self._view_model: ICalendarPanelViewModel = view_model
+
         self._setup_ui()
+        # TODO: (asnden): uncomment when ICalendarPanelViewModel child is done.
+        # self._connect_signals()
+        #
+        # self._view_model.load_event_templates()
+        # self._view_model.load_events()
 
     def _setup_ui(self) -> None:
         self.setMinimumWidth(350)
@@ -43,7 +59,6 @@ class CalendarPanel(QFrame):
         self._calendar.setVerticalHeaderFormat(
             QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
         )
-        # _ = self._calendar.clicked.connect(self._on_date_clicked)
         layout.addWidget(self._calendar)
 
         # all events as a list
@@ -53,99 +68,65 @@ class CalendarPanel(QFrame):
         layout.addWidget(subjects_title)
 
         self._all_subjects_list: QListWidget = QListWidget()
-        # _ = self._all_subjects_list.itemDoubleClicked.connect(self._quick_add_to_date)
         layout.addWidget(self._all_subjects_list)
 
-        # self._load_all_subjects()
-
         add_btn = QPushButton("➕ Добавить предмет на выбранную дату")
-        # _ = add_btn.clicked.connect(self._add_to_selected_date)
         layout.addWidget(add_btn)
 
-    # def _on_date_clicked(self, date: QDate) -> None:
-    #     date_str = date.toString("yyyy-MM-dd")
-    #     self.date_selected.emit(date_str)
-    #
-    # def _load_all_subjects(self) -> None:
-    #     # self._all_subjects_list.clear()
-    #     # schedule = self._db.get_schedule()
-    #     # unique_subjects = {}
-    #     # for item in schedule:
-    #     #     if item.subject_name not in unique_subjects:
-    #     #         unique_subjects[item.subject_name] = item.id
-    #     #         list_item = QListWidgetItem(f"📖 {item.subject_name}")
-    #     #         list_item.setData(Qt.UserRole, item.subject_name)
-    #     #         self._all_subjects_list.addItem(list_item)
-    #     pass
-    #
-    # def _add_to_selected_date(self) -> None:
-    #     # selected = self._calendar.selectedDate()
-    #     # if not selected:
-    #     #     _ = QMessageBox.warning(self, "Ошибка", "Выберите дату в календаре!")
-    #     #     return
-    #     #
-    #     # date_str = selected.toString("yyyy-MM-dd")
-    #     #
-    #     # name, ok = QInputDialog.getText(self, "Новый предмет", "Название предмета:")
-    #     # if not ok or not name:
-    #     #     return
-    #     #
-    #     # topic, ok = QInputDialog.getText(self, "Тема занятия", f"Тема для '{name}':")
-    #     # if not ok:
-    #     #     topic = ""
-    #     #
-    #     # schedule = self._db.get_schedule()
-    #     # new_id = max([s.id for s in schedule], default=0) + 1
-    #     # new_item = ScheduleItem(
-    #     #     id=new_id, subject_name=name, topic=topic, date=date_str, member_ids=[]
-    #     # )
-    #     # self._db.add_schedule_item(new_item)
-    #     #
-    #     # self._load_all_subjects()
-    #     # self.date_selected.emit(date_str)
-    #     # QMessageBox.information(
-    #     #     self, "Успех", f"Предмет '{name}' добавлен на {date_str}"
-    #     # )
-    #     pass
-    #
-    # def _quick_add_to_date(self, item) -> None:
-    #     subject_name = item.data(Qt.ItemDataRole.UserRole)
-    #     selected = self._calendar.selectedDate()
-    #     if not selected:
-    #         _ = QMessageBox.warning(self, "Ошибка", "Выберите дату в календаре!")
-    #         return
-    #
-    #     date_str = selected.toString("yyyy-MM-dd")
-    #
-    #     existing = self._db.get_schedule_for_date(date_str)
-    #     if any(s.subject_name == subject_name for s in existing):
-    #         QMessageBox.warning(
-    #             self, "Ошибка", f"Предмет '{subject_name}' уже есть на {date_str}!"
-    #         )
-    #         return
-    #
-    #     topic, ok = QInputDialog.getText(
-    #         self, "Тема занятия", f"Тема для '{subject_name}':"
-    #     )
-    #     if not ok:
-    #         topic = ""
-    #
-    #     schedule = self._db.get_schedule()
-    #     new_id = max([s.id for s in schedule], default=0) + 1
-    #     new_item = ScheduleItem(
-    #         id=new_id,
-    #         subject_name=subject_name,
-    #         topic=topic,
-    #         date=date_str,
-    #         member_ids=[],
-    #     )
-    #     self._db.add_schedule_item(new_item)
-    #
-    #     self.date_selected.emit(date_str)
-    #     QMessageBox.information(
-    #         self, "Успех", f"Предмет '{subject_name}' добавлен на {date_str}"
-    #     )
-    #
-    # def set_current_date(self, date_str: str) -> None:
-    #     year, month, day = map(int, date_str.split("-"))
-    #     self._calendar.setSelectedDate(QDate(year, month, day))
+        _ = self._calendar.clicked.connect(self._on_date_clicked)
+        _ = self._all_subjects_list.itemDoubleClicked.connect(
+            self._on_template_double_clicked
+        )
+        _ = add_btn.clicked.connect(self._on_add_event_clicked)
+
+    def _connect_signals(self) -> None:
+        _ = self._view_model.template_changed.connect(self._on_templates_loaded)
+        _ = self._view_model.show_warning.connect(self._display_warning)
+        _ = self._view_model.show_success.connect(self._display_success)
+        _ = self._view_model.date_changed.connect(self._on_view_model_date_changed)
+
+    def _on_templates_loaded(self, templates: list[EventTemplate]) -> None:
+        self._all_subjects_list.clear()
+        for template in templates:
+            list_item = QListWidgetItem(f"📖 {template.label}")
+            list_item.setData(Qt.ItemDataRole.UserRole, template)
+            self._all_subjects_list.addItem(list_item)
+
+    def _on_view_model_date_changed(self, date_str: str) -> None:
+        self.date_selected.emit(date_str)
+
+    def _display_warning(self, message: str) -> None:
+        _ = QMessageBox.warning(self, "Предупреждение", message)
+
+    def _display_success(self, message: str) -> None:
+        _ = QMessageBox.information(self, "Успех", message)
+
+    def _on_date_clicked(self, date: QDate) -> None:
+        self._view_model.select_date(date)
+        self._view_model.load_events()
+
+    def _on_template_double_clicked(self, item: QListWidgetItem) -> None:
+        template: EventTemplate = cast(
+            "EventTemplate", item.data(Qt.ItemDataRole.UserRole)
+        )
+        if template:
+            self._view_model.quick_add_template(template)
+
+    def _on_add_event_clicked(self) -> None:
+        name: str
+        ok: bool
+        name, ok = QInputDialog.getText(self, "Новый предмет", "Название предмета:")
+        if not ok or not name.strip():
+            return
+
+        self._view_model.add_new_event(
+            label=name.strip(),
+            description="",
+            start_time=dt_time(9, 0),
+            duration=timedelta(hours=1, minutes=30),
+        )
+
+    def set_current_date(self, date_str: str) -> None:
+        year, month, day = map(int, date_str.split("-"))
+        self._calendar.setSelectedDate(QDate(year, month, day))
+        self._view_model.select_date(QDate(year, month, day))
