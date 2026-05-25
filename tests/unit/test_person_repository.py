@@ -1,52 +1,11 @@
-import sys
 from typing import cast
 
 import pytest
-from PySide6.QtSql import QSqlDatabase, QSqlQuery
-from PySide6.QtWidgets import QApplication
+from PySide6.QtSql import QSqlQuery
 
 from src.roll.core import PersonUpdateDTO
-from src.roll.repositories.person_repository import PersonRepository
+from src.roll.repositories import PersonRepository
 from tests.conftest import VALID_PERSON_DATA
-
-TABLE_QUERY = """
-CREATE TABLE persons (
-    person_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    label TEXT NOT NULL CHECK (trim(label) != ''),
-    description TEXT
-);
-"""
-
-
-@pytest.fixture(scope="session")
-def qapp():
-    app = QApplication.instance()
-
-    if app is None:
-        app = QApplication(sys.argv)
-
-    return app
-
-
-@pytest.fixture(scope="class", autouse=True)
-def database(qapp):
-    db = QSqlDatabase.addDatabase("QSQLITE")
-    db.setDatabaseName(":memory:")
-
-    if not db.open():
-        pytest.fail("Unable to open database.")
-
-    query = QSqlQuery(db)
-
-    if not query.exec(TABLE_QUERY):
-        pytest.fail(query.lastError().text())
-
-    yield db
-
-    db.close()
-
-    del query
-    del db
 
 
 class TestPersonRepository:
@@ -152,8 +111,12 @@ class TestPersonRepository:
         p_id_1 = repository.add(new_person_1)
         p_id_2 = repository.add(new_person_2)
 
-        found_1 = repository.get(p_id_1)
-        found_2 = repository.get(p_id_2)
+        persons = repository.get_all()
+
+        assert len(persons) == 2
+
+        found_1 = persons[0]
+        found_2 = persons[1]
 
         assert found_1 is not None
         assert found_1.person_id == p_id_1

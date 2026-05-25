@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, cast, override
 
-from PySide6.QtSql import QSqlQuery
+from PySide6.QtSql import QSqlDatabase, QSqlQuery
 
 from roll.core import IdentifierType, IIdentifierRepository
 from roll.repositories.base_qsqlite_repository import BaseQtSQLiteRepository
@@ -14,13 +14,18 @@ logger = logging.getLogger(__name__)
 
 
 class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
-    def __init__(self) -> None:
-        """Log message on repository init."""
+    def __init__(self, db: QSqlDatabase) -> None:
+        """Initializes identifier repository with database.
+
+        Args:
+            db: QT SQL database
+        """
         logger.info("Initialized identifier repository")
+        self.db: QSqlDatabase = db
 
     @override
     def get(self, identifier_id: int) -> BaseIdentifier | None:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         SELECT identifier_id, hash_value, person_id, identifier_type
@@ -42,9 +47,31 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
         return None
 
     @override
-    def add(self, identifier: IdentifierUpdateDTO) -> None:
-        # TODO (asnden): probably should remove this checks
-        # cause they duplicate database checks
+    def get_by_person(self, person_id: int) -> tuple[BaseIdentifier, ...]:
+        query = QSqlQuery(self.db)
+
+        sql = """
+        SELECT identifier_id, hash_value, person_id, identifier_type
+        FROM identifiers
+        WHERE person_id = (?);
+        """
+
+        if not query.prepare(sql):
+            self._raise_on_prepare(query)
+
+        query.addBindValue(person_id)
+
+        if not query.exec():
+            self._raise_on_exec(query)
+
+        identifiers: list[BaseIdentifier] = []
+        while query.next():
+            identifiers += [self._build_identifier(query)]
+
+        return tuple(identifiers)
+
+    @override
+    def add(self, identifier: IdentifierUpdateDTO) -> int:
         if not (
             identifier.hash_value
             and identifier.person_id
@@ -52,7 +79,7 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
         ):
             raise DTOValueError
 
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         INSERT INTO identifiers (person_id, hash_value, identifier_type)
@@ -62,31 +89,24 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
         if not query.prepare(sql):
             self._raise_on_prepare(query)
 
-        query.bindValue("person_id", identifier.person_id)
-        query.bindValue("hash_value", identifier.hash_value)
-        query.bindValue("identifier_type", identifier.identifier_type.name)
+        query.bindValue(":person_id", identifier.person_id)
+        query.bindValue(":hash_value", identifier.hash_value)
+        query.bindValue(":identifier_type", identifier.identifier_type.name)
 
         if not query.exec():
             self._raise_on_exec(query)
 
+        return cast("int", query.lastInsertId())
+
     @override
     def update(self, identifier_id: int, identifier: IdentifierUpdateDTO) -> None:
-        if not (
-            identifier.hash_value
-            and identifier.person_id
-            and identifier.identifier_type
-        ):
-            raise DTOValueError
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         UPDATE identifiers
-        SET hash_value = CASE
-                WHEN :hash_value = '' THEN NULL
-                WHEN :hash_value IS NULL THEN hash_value
-                ELSE :hash_value
-            END
-            person_id = COALESCE(:person_id, person_id)
+        SET
+            hash_value = COALESCE(:hash_value, hash_value),
+            person_id = COALESCE(:person_id, person_id),
             identifier_type = COALESCE(:identifier_type, identifier_type)
         WHERE identifier_id = :id;
         """
@@ -94,10 +114,13 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
         if not query.prepare(sql):
             self._raise_on_prepare(query)
 
-        query.bindValue("person_id", identifier.person_id)
-        query.bindValue("hash_value", identifier.hash_value)
-        query.bindValue("identifier_type", identifier.identifier_type.name)
-        query.bindValue("id", identifier_id)
+        query.bindValue(":person_id", identifier.person_id)
+        query.bindValue(":hash_value", identifier.hash_value)
+        query.bindValue(
+            ":identifier_type",
+            identifier.identifier_type.name if identifier.identifier_type else None,
+        )
+        query.bindValue(":id", identifier_id)
 
         if not query.exec():
             self._raise_on_exec(query)
@@ -107,11 +130,11 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
 
     @override
     def delete(self, identifier_id: int) -> bool:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         DELETE FROM identifiers
-        WHERE identifier_id = (?)
+        WHERE identifier_id = (?);
         """
 
         if not query.prepare(sql):

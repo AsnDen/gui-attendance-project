@@ -30,18 +30,34 @@ class IAttendanceRepository(ABC):
     def get(self, attendance_id: int) -> BaseAttendance | None:
         """Finds and returns attendance by it's id.
 
-        Returns None if attendance is not found.
-
         Args:
-            attendance_id: id of an attendance
+            attendance_id: id of an attendance.
+
+        Returns:
+            None if attendance is not found.
+            BaseAttendnace if attendance is found.
         """
 
     @abstractmethod
-    def add(self, attendance: AttendanceUpdateDTO) -> None:
+    def get_by_event(self, event_id: int) -> tuple[BaseAttendance, ...]:
+        """Finds and returns attendance by event id.
+
+        Args:
+            event_id: id of an event.
+
+        Returns:
+            tuple of BaseAttendance: all attendances that lincked to event.
+        """
+
+    @abstractmethod
+    def add(self, attendance: AttendanceUpdateDTO) -> int:
         """Saves new attendance in repository.
 
         Args:
-            attendance: All DTO fields of attendance must not be None
+            attendance: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
         """
 
     @abstractmethod
@@ -49,7 +65,7 @@ class IAttendanceRepository(ABC):
         """Updates existing attendance info.
 
         Args:
-            attendance_id: id of an attendance
+            attendance_id: id of an attendance.
             attendance: DTO with fields that may be empty.
         """
 
@@ -57,10 +73,11 @@ class IAttendanceRepository(ABC):
     def delete(self, attendance_id: int) -> bool:
         """Deletes attendance from repository.
 
-        Returns bool if operation is successfull.
-
         Args:
-            attendance_id: id of an attendance
+            attendance_id: id of an attendance.
+
+        Returns:
+            bool: if operation is successfull or not.
         """
 
 
@@ -71,26 +88,51 @@ class IEventRepository(ABC):
     def get(self, event_id: int) -> BaseEvent | None:
         """Finds and returns event by it's id.
 
-        Returns None if event is not found.
+        Args:
+            event_id: id of an event
+
+        Returns:
+            None if event is not found.
+            BaseEvent if event is found.
         """
 
     @abstractmethod
     def get_all(self) -> tuple[BaseEvent, ...]:
-        """Returns tuple of all saved event."""
+        """Finds all events saved in repository.
+
+        Returns:
+            tuple: all saved events.
+        """
 
     @abstractmethod
-    def add(self, event: EventUpdateDTO) -> None:
-        """Saves new event in repository."""
+    def add(self, event: EventUpdateDTO) -> int:
+        """Saves new event in repository.
+
+        Args:
+            event: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
+        """
 
     @abstractmethod
     def update(self, event_id: int, event: EventUpdateDTO) -> None:
-        """Updates existing event info."""
+        """Updates event info.
+
+        Args:
+            event_id: id of an event.
+            event: DTO with fields that may be empty.
+        """
 
     @abstractmethod
     def delete(self, event_id: int) -> bool:
         """Deletes event from repository.
 
-        Returns bool if operation is successfull.
+        Args:
+            event_id: id of event.
+
+        Returns:
+            bool: if operation is successfull or not.
         """
 
 
@@ -100,6 +142,9 @@ class IPersonRepository(ABC):
     @abstractmethod
     def get(self, person_id: int) -> BasePerson | None:
         """Finds and returns person by it's id.
+
+        Args:
+            person_id: id of person.
 
         Returns:
             None if person is not found.
@@ -153,20 +198,52 @@ class IIdentifierRepository(ABC):
     def get(self, identifier_id: int) -> BaseIdentifier | None:
         """Finds and returns identifier by it's id.
 
-        Returns None if identifier is not found.
+        Args:
+            identifier_id: id of identifier.
+
+        Returns:
+            None if identifier is not found.
+            BaseIdentifier if identifier is found.
         """
 
     @abstractmethod
-    def add(self, identifier: IdentifierUpdateDTO) -> None:
-        """Saves new identifier in repository."""
+    def get_by_person(self, person_id: int) -> tuple[BaseIdentifier, ...]:
+        """Finds and returns identifier by person's id.
+
+        Args:
+            person_id: id of a person.
+
+        Returns:
+            tuple of BaseIdentifier: all identigiers that person has.
+        """
+
+    @abstractmethod
+    def add(self, identifier: IdentifierUpdateDTO) -> int:
+        """Saves new identifier in repository.
+
+        Args:
+            identifier: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
+        """
 
     @abstractmethod
     def update(self, identifier_id: int, identifier: IdentifierUpdateDTO) -> None:
-        """Updates existing identifier info."""
+        """Updates identifier info.
+
+        Args:
+            identifier_id: id of identifier.
+            identifier: DTO with fields that may be empty.
+        """
 
     @abstractmethod
     def delete(self, identifier_id: int) -> bool:
         """Deletes identifier from repository.
 
-        Returns bool if operation is successfull.
+        Args:
+            identifier_id: id of identifier.
+
+        Returns:
+            bool: if operation is successfull or not.
         """

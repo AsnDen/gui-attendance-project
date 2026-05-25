@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, cast, override
 
-from PySide6.QtSql import QSqlQuery
+from PySide6.QtSql import QSqlDatabase, QSqlQuery
 
 from roll.core import Event
 from roll.core.interfaces import IEventRepository
@@ -16,13 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 class EventRepository(IEventRepository, BaseQtSQLiteRepository):
-    def __init__(self) -> None:
-        """Log message on repository init."""
+    def __init__(self, db: QSqlDatabase) -> None:
+        """Initializes event repository with database.
+
+        Args:
+            db: QT SQL database
+        """
         logger.info("Initialized event repository")
+        self.db: QSqlDatabase = db
 
     @override
     def get(self, event_id: int) -> BaseEvent | None:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         SELECT event_id, label, description, start_time, duration_seconds
@@ -45,7 +50,7 @@ class EventRepository(IEventRepository, BaseQtSQLiteRepository):
 
     @override
     def get_all(self) -> tuple[BaseEvent, ...]:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         SELECT event_id, label, description, start_time, duration_seconds
@@ -60,54 +65,54 @@ class EventRepository(IEventRepository, BaseQtSQLiteRepository):
 
         events: list[BaseEvent] = []
 
-        if query.next():
+        while query.next():
             events += [self._build_event(query)]
 
         return tuple(events)
 
     @override
-    def add(self, event: EventUpdateDTO) -> None:
+    def add(self, event: EventUpdateDTO) -> int:
         if not (
             event.label
             and event.duration
             and event.start_time
-            and event.duration.seconds > 0
+            and event.duration.total_seconds() > 0
         ):
             raise DTOValueError
 
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         INSERT INTO events (label, description, start_time, duration_seconds)
-        VALUES (:label, NULLIF(:description, ''), :start_time, :duration_seconds);
+        VALUES (:label, :description, :start_time, :duration_seconds);
         """
 
         if not query.prepare(sql):
             self._raise_on_prepare(query)
 
-        query.bindValue("label", event.label)
-        query.bindValue("description", event.description)
-        query.bindValue("start_time", event.start_time.isoformat())
-        query.bindValue("duration_seconds", event.duration.seconds)
+        query.bindValue(":label", event.label)
+        query.bindValue(":description", event.description)
+        query.bindValue(":start_time", event.start_time.isoformat())
+        query.bindValue(":duration_seconds", event.duration.total_seconds())
 
         if not query.exec():
             self._raise_on_exec(query)
 
+        return cast("int", query.lastInsertId())
+
     @override
     def update(self, event_id: int, event: EventUpdateDTO) -> None:
-        if event.label == "" or event.duration == 0:
+        if event.label == "" or (
+            event.duration and event.duration.total_seconds() == 0
+        ):
             raise DTOValueError
 
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         UPDATE events
         SET label = COALESCE(:label, label),
-            description = CASE
-                WHEN :description = '' THEN NULL
-                WHEN :description IS NULL THEN description
-                ELSE :description
-            END
+            description = COALESCE(:description, description),
             start_time = COALESCE(:start_time, start_time),
             duration_seconds = COALESCE(:duration_seconds, duration_seconds)
         WHERE event_id = :id;
@@ -116,11 +121,16 @@ class EventRepository(IEventRepository, BaseQtSQLiteRepository):
         if not query.prepare(sql):
             self._raise_on_prepare(query)
 
-        query.bindValue("label", event.label)
-        query.bindValue("description", event.description)
-        query.bindValue("start_time", event.start_time)
-        query.bindValue("duration_seconds", event.duration)
-        query.bindValue("id", event_id)
+        query.bindValue(":label", event.label)
+        query.bindValue(":description", event.description)
+        query.bindValue(
+            ":start_time", event.start_time.isoformat() if event.start_time else None
+        )
+        query.bindValue(
+            ":duration_seconds",
+            event.duration.total_seconds() if event.duration else None,
+        )
+        query.bindValue(":id", event_id)
 
         if not query.exec():
             self._raise_on_exec(query)
@@ -130,7 +140,7 @@ class EventRepository(IEventRepository, BaseQtSQLiteRepository):
 
     @override
     def delete(self, event_id: int) -> bool:
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
 
         sql = """
         DELETE FROM events

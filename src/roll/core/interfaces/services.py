@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
+
+from roll.core.entities import AttendanceStatus
 
 if TYPE_CHECKING:
     from roll.core.entities import (
-        AttendanceUpdateDTO,
         BaseAttendance,
         BaseEvent,
         BaseIdentifier,
         BasePerson,
-        EventUpdateDTO,
-        IdentifierUpdateDTO,
     )
 
 
@@ -47,7 +47,7 @@ class IPersonService(ABC):
             description: person description.
 
         Returns:
-            int: saved user id.
+            int: saved person id.
 
         Raises:
             EmptyLabelError: if label is empty string.
@@ -89,23 +89,84 @@ class IEventService(ABC):
 
     @abstractmethod
     def get_event(self, event_id: int) -> BaseEvent:
-        pass
+        """Gets event by its id.
+
+        Args:
+            event_id: valid event id.
+
+        Returns:
+            BaseEvent: valid event data.
+
+        Raises:
+            EventNotFoundError: event_id is invalid.
+        """
 
     @abstractmethod
     def get_all_events(self) -> tuple[BaseEvent, ...]:
-        pass
+        """Gets all events.
+
+        Returns:
+            tuple of BaseEvent: all saved events.
+        """
 
     @abstractmethod
-    def add_event(self, label: str, description: str | None = None) -> None:
-        pass
+    def add_event(
+        self,
+        label: str,
+        start_time: datetime,
+        duration: timedelta,
+        description: str = "",
+    ) -> int:
+        """Saves event data.
+
+        Args:
+            label: event label.
+            start_time: event start time.
+            duration: event duration.
+            description: event description.
+
+        Returns:
+            int: saved event id.
+
+        Raises:
+            EmptyLabelError: if label is empty string.
+            ZeroDurationError: if duration.total_seconds() == 0
+        """
 
     @abstractmethod
-    def update_event(self, event_id: int, event: EventUpdateDTO) -> None:
-        pass
+    def update_event(
+        self,
+        event_id: int,
+        *,
+        label: str | None = None,
+        start_time: datetime | None = None,
+        duration: timedelta | None = None,
+        description: str | None = None,
+    ) -> None:
+        """Updates event data.
+
+        Args:
+            event_id: valid event id.
+            label: event label. Not updated if None.
+            start_time: event start time. Not updated if None.
+            duration: event duration. Not updated if None.
+            description: event description. Not updated if None.
+
+        Raises:
+            EmptyLabelError: if label is empty string.
+            ZeroDurationError: if duration.total_seconds() == 0
+        """
 
     @abstractmethod
     def delete_event(self, event_id: int) -> None:
-        pass
+        """Deletes event.
+
+        Args:
+            event_id: valid event id.
+
+        Raises:
+            EventNotFoundError: event_id is invalid.
+        """
 
 
 class IAttendanceService(ABC):
@@ -113,27 +174,76 @@ class IAttendanceService(ABC):
 
     @abstractmethod
     def get_attendance(self, attendance_id: int) -> BaseAttendance:
-        pass
+        """Gets attendance by its id.
+
+        Args:
+            attendance_id: valid attendance id.
+
+        Returns:
+            BaseAttendance: valid attendance data.
+
+        Raises:
+            AttendanceNotFoundError: attendance_id is invalid.
+        """
 
     @abstractmethod
     def get_event_attendance(self, event_id: int) -> tuple[BaseAttendance, ...]:
-        pass
+        """Gets attendances by event id.
+
+        Args:
+            event_id: valid event id.
+
+        Returns:
+            tuple of BaseAttendance: valid attendance data.
+
+        Raises:
+            EventNotFoundError: event_id is invalid.
+        """
 
     @abstractmethod
     def add_attendance(
-        self, person_id: int, event_id: int, *, is_present: bool = False
-    ) -> None:
-        pass
+        self,
+        person_id: int,
+        event_id: int,
+        status: AttendanceStatus = AttendanceStatus.ABSENT,
+    ) -> int:
+        """Saves attendance data.
+
+        Args:
+            person_id: id of person who attend event.
+            event_id: if of event.
+            status: attendance status.
+
+        Returns:
+            int: saved attendance id.
+
+        Raises:
+            PersonNotFoundError: if person does not exist.
+            EventNotFoundError: if event does not exist.
+        """
 
     @abstractmethod
-    def update_attendance(
-        self, attendance_id: int, attendance: AttendanceUpdateDTO
-    ) -> None:
-        pass
+    def update_attendance(self, attendance_id: int, status: AttendanceStatus) -> None:
+        """Updates attendance data.
+
+        Args:
+            attendance_id: valid attendance id.
+            status: new attendance status.
+
+        Raises:
+            AttendanceNotFoundError: if attendance_id is invalid.
+        """
 
     @abstractmethod
     def delete_attendance(self, attendance_id: int) -> None:
-        pass
+        """Deletes attendance.
+
+        Args:
+            attendance_id: valid attendance id.
+
+        Raises:
+            AttendanceNotFoundError: attendance_id is invalid.
+        """
 
 
 class IIdentifierService(ABC):
@@ -141,25 +251,69 @@ class IIdentifierService(ABC):
 
     @abstractmethod
     def get_identifier(self, identifier_id: int) -> BaseIdentifier:
-        pass
+        """Gets identifier by its id.
+
+        Args:
+            identifier_id: valid identigier id.
+
+        Returns:
+            BaseIdentifier: valid identifier data.
+
+        Raises:
+            IdentifierNotFoundError: identigier_id is invalid.
+        """
 
     @abstractmethod
     def get_person_identifiers(self, person_id: int) -> tuple[BaseIdentifier, ...]:
-        pass
+        """Gets identifiers by person id.
+
+        Args:
+            person_id: valid person id.
+
+        Returns:
+            tuple of BaseIdentifier: valid identifier data.
+
+        Raises:
+            PersonNotFoundError: person_id is invalid.
+        """
 
     @abstractmethod
-    def add_identifier(self, hash_value: str, person_id: int) -> None:
-        pass
+    def add_identifier(self, hash_value: str, person_id: int) -> int:
+        """Saves identifier data.
+
+        Args:
+            hash_value: encrypted value of data.
+            person_id: id of person who owns identifier.
+
+        Returns:
+            int: saved attendance id.
+
+        Raises:
+            PersonNotFoundError: if person does not exist.
+        """
 
     @abstractmethod
-    def update_identifier(
-        self, identifier_id: int, identifier: IdentifierUpdateDTO
-    ) -> None:
-        pass
+    def update_identifier(self, identifier_id: int, hash_value: str) -> None:
+        """Updates identifier data.
+
+        Args:
+            identifier_id: valid identifier id.
+            hash_value: new hash value.
+
+        Raises:
+            IdentifierNotFoundError: if identifier_id is invalid.
+        """
 
     @abstractmethod
     def delete_identifier(self, identifier_id: int) -> None:
-        pass
+        """Deletes identifier.
+
+        Args:
+            identifier_id: valid identifier id.
+
+        Raises:
+            identifierNotFoundError: identifier_id is invalid.
+        """
 
 
 class IVerificationService(ABC):

@@ -5,12 +5,14 @@ from roll.repositories.exceptions import (
     QueryFailedExecError,
     QueryFailedPrepareError,
 )
+from roll.repositories.identifier_repository import IdentifierRepository
 from roll.repositories.person_repository import PersonRepository
 
 __all__ = [
     "AttendanceRepository",
     "DTOValueError",
     "EventRepository",
+    "IdentifierRepository",
     "PersonRepository",
     "QueryFailedExecError",
     "QueryFailedPrepareError",
