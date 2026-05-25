@@ -198,20 +198,41 @@ class IIdentifierRepository(ABC):
     def get(self, identifier_id: int) -> BaseIdentifier | None:
         """Finds and returns identifier by it's id.
 
-        Returns None if identifier is not found.
+        Args:
+            identifier_id: id of identifier.
+
+        Returns:
+            None if identifier is not found.
+            BaseIdentifier if identifier is found.
         """
 
     @abstractmethod
     def add(self, identifier: IdentifierUpdateDTO) -> int:
-        """Saves new identifier in repository."""
+        """Saves new identifier in repository.
+
+        Args:
+            identifier: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
+        """
 
     @abstractmethod
     def update(self, identifier_id: int, identifier: IdentifierUpdateDTO) -> None:
-        """Updates existing identifier info."""
+        """Updates identifier info.
+
+        Args:
+            identifier_id: id of identifier.
+            identifier: DTO with fields that may be empty.
+        """
 
     @abstractmethod
     def delete(self, identifier_id: int) -> bool:
         """Deletes identifier from repository.
 
-        Returns bool if operation is successfull.
+        Args:
+            identifier_id: id of identifier.
+
+        Returns:
+            bool: if operation is successfull or not.
         """
