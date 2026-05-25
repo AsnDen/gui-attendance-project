@@ -11,6 +11,7 @@ from roll.repositories import (
     PersonRepository,
 )
 from roll.services import AttendanceService, EventService, PersonService
+from roll.ui import MainWindow
 
 
 def main() -> None:
@@ -33,6 +34,9 @@ def main() -> None:
     person_service = PersonService(person_repo)
     event_service = EventService(event_repo)
     attendance_serivce = AttendanceService(attendance_repo, person_repo, event_repo)
+
+    window = MainWindow()
+    window.show()
 
     sys.exit(app.exec())
 
