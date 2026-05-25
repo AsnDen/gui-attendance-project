@@ -47,6 +47,30 @@ class IdentifierRepository(IIdentifierRepository, BaseQtSQLiteRepository):
         return None
 
     @override
+    def get_by_person(self, person_id: int) -> tuple[BaseIdentifier, ...]:
+        query = QSqlQuery(self.db)
+
+        sql = """
+        SELECT identifier_id, hash_value, person_id, identifier_type
+        FROM identifiers
+        WHERE person_id = (?);
+        """
+
+        if not query.prepare(sql):
+            self._raise_on_prepare(query)
+
+        query.addBindValue(person_id)
+
+        if not query.exec():
+            self._raise_on_exec(query)
+
+        identifiers: list[BaseIdentifier] = []
+        while query.next():
+            identifiers += [self._build_identifier(query)]
+
+        return tuple(identifiers)
+
+    @override
     def add(self, identifier: IdentifierUpdateDTO) -> int:
         if not (
             identifier.hash_value

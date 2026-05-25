@@ -207,6 +207,17 @@ class IIdentifierRepository(ABC):
         """
 
     @abstractmethod
+    def get_by_person(self, person_id: int) -> tuple[BaseIdentifier, ...]:
+        """Finds and returns identifier by person's id.
+
+        Args:
+            person_id: id of a person.
+
+        Returns:
+            tuple of BaseIdentifier: all identigiers that person has.
+        """
+
+    @abstractmethod
     def add(self, identifier: IdentifierUpdateDTO) -> int:
         """Saves new identifier in repository.
 
