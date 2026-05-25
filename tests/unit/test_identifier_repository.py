@@ -157,7 +157,7 @@ class TestIdentifierRepository:
         assert found.hash_value == hash_value
         assert isinstance(found, identifier_type.value)
 
-    def test_get_all_identifiers(self, repository: IdentifierRepository):
+    def test_get_person_identifiers(self, repository: IdentifierRepository):
         person_id_1 = person_id_2 = 1
         person_id_3 = 2
         type_1 = type_3 = IdentifierType.CARD
@@ -179,9 +179,15 @@ class TestIdentifierRepository:
         i_id_2 = repository.add(new_identifier_2)
         i_id_3 = repository.add(new_identifier_3)
 
-        found_1 = repository.get(i_id_1)
-        found_2 = repository.get(i_id_2)
-        found_3 = repository.get(i_id_3)
+        identifiers_1 = repository.get_by_person(person_id_1)
+        identifiers_2 = repository.get_by_person(person_id_3)
+
+        assert len(identifiers_1) == 2
+        assert len(identifiers_2) == 1
+
+        found_1 = identifiers_1[0]
+        found_2 = identifiers_1[1]
+        found_3 = identifiers_2[0]
 
         assert found_1 is not None
         assert found_1.identifier_id == i_id_1
