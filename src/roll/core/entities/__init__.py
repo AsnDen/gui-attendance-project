@@ -21,7 +21,16 @@ from roll.core.entities.attendance import (
     AttendanceUpdateDTO,
     BaseAttendance,
 )
-from roll.core.entities.event import BaseEvent, Event, EventShema, EventUpdateDTO
+from roll.core.entities.event import (
+    BaseEvent,
+    BaseEventTemplate,
+    Event,
+    EventShema,
+    EventTemplate,
+    EventTemplateShema,
+    EventTemplateUpdateDTO,
+    EventUpdateDTO,
+)
 from roll.core.entities.identifier import (
     BaseIdentifier,
     CardIdentifier,
@@ -39,11 +48,15 @@ __all__ = [
     "AttendanceUpdateDTO",
     "BaseAttendance",
     "BaseEvent",
+    "BaseEventTemplate",
     "BaseIdentifier",
     "BasePerson",
     "CardIdentifier",
     "Event",
     "EventShema",
+    "EventTemplate",
+    "EventTemplateShema",
+    "EventTemplateUpdateDTO",
     "EventUpdateDTO",
     "IdentifierShema",
     "IdentifierType",
