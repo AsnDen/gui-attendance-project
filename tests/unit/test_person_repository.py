@@ -111,8 +111,12 @@ class TestPersonRepository:
         p_id_1 = repository.add(new_person_1)
         p_id_2 = repository.add(new_person_2)
 
-        found_1 = repository.get(p_id_1)
-        found_2 = repository.get(p_id_2)
+        persons = repository.get_all()
+
+        assert len(persons) == 2
+
+        found_1 = persons[0]
+        found_2 = persons[1]
 
         assert found_1 is not None
         assert found_1.person_id == p_id_1
