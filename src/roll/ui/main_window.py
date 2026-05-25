@@ -3,7 +3,7 @@ from typing import override
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QWidget
 
-from roll.ui.panels import CalendarPanel, DayEventPanel, ScannerPanel
+from roll.ui.panels import CalendarPanel, DayEventsPanel, ScannerPanel
 
 
 class MainWindow(QMainWindow):
@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(10)
         main_layout.setContentsMargins(10, 10, 10, 10)
 
-        self._day_panel: DayEventPanel = DayEventPanel()
+        self._day_panel: DayEventsPanel = DayEventsPanel()
         main_layout.addWidget(self._day_panel)
 
         self._scanner_panel: ScannerPanel = ScannerPanel()

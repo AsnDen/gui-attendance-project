@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 
-class DayEventPanel(QFrame):
+class DayEventsPanel(QFrame):
     event_selected: Signal = Signal(object)
 
     def __init__(self) -> None:
