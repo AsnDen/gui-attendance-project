@@ -158,8 +158,12 @@ class TestEventRepository:
         e_id_1 = repository.add(new_event_1)
         e_id_2 = repository.add(new_event_2)
 
-        found_1 = repository.get(e_id_1)
-        found_2 = repository.get(e_id_2)
+        events = repository.get_all()
+
+        assert len(events) == 2
+
+        found_1 = events[0]
+        found_2 = events[1]
 
         assert found_1 is not None
         assert found_1.event_id == e_id_1
