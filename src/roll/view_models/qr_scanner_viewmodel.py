@@ -11,10 +11,9 @@ from PySide6.QtCore import (
 from roll.services.qr_reader_service import (
     CameraUnavailableError,
     QRIdentifierReaderService,
-    QRReaderError,
 )
-
 from roll.services.camera_service import CameraService
+from roll.services.exceptions import QRReaderError
 
 logger = logging.getLogger(__name__)
 
@@ -26,40 +25,30 @@ class QRScannerWorker(QObject):
     error_occurred = Signal(str)
     camera_status_changed = Signal(bool)
     finished = Signal()
+    stop_requested = Signal()   # сигнал для остановки из другого потока
 
     def __init__(self, scanner: QRIdentifierReaderService, scan_interval_ms: int = 100):
-        """
-        Args:
-            scanner:
-                QR reader service instance.
-
-            scan_interval_ms:
-                Delay between frame scans in milliseconds.
-        """
         super().__init__()
-
         self._scanner = scanner
         self._last_qr: str | None = None
         self._timer = QTimer()
         self._timer.setInterval(scan_interval_ms)
         self._timer.timeout.connect(self._scan)
+        self.stop_requested.connect(self.stop)
 
     @Slot()
     def start(self) -> None:
-        """Start periodic QR scanning."""
         logger.info("Starting QR scanner worker")
         self._timer.start()
 
     @Slot()
     def stop(self) -> None:
-        """Stop periodic QR scanning."""
         logger.info("Stopping QR scanner worker")
         self._timer.stop()
         self.finished.emit()
 
     @Slot()
     def _scan(self) -> None:
-        """Read and process single camera frame."""
         try:
             result = self._scanner.read_identifier()
             self.camera_status_changed.emit(True)
@@ -73,10 +62,12 @@ class QRScannerWorker(QObject):
             logger.warning("Camera unavailable: %s", e)
             self.camera_status_changed.emit(False)
             self.error_occurred.emit(str(e))
+            self.stop_requested.emit()   # останавливаем worker при ошибке камеры
 
         except QRReaderError as e:
             logger.exception("QR scanner error")
             self.error_occurred.emit(str(e))
+            self.stop_requested.emit()   # останавливаем worker при ошибке чтения
 
 
 class QRScannerViewModel(QObject):
@@ -89,19 +80,9 @@ class QRScannerViewModel(QObject):
     camera_status_changed = Signal(bool)
 
     def __init__(self, camera_id: int = 0, scan_interval_ms: int = 100):
-        """
-        Args:
-            camera_id:
-                OpenCV camera device identifier.
-
-            scan_interval_ms:
-                Delay between frame scans in milliseconds.
-        """
         super().__init__()
-
         self.camera_id = camera_id
         self._scan_interval_ms = scan_interval_ms
-        self._camera_service = CameraService(camera_id=camera_id)
 
         self._thread: QThread | None = None
         self._worker: QRScannerWorker | None = None
@@ -109,19 +90,13 @@ class QRScannerViewModel(QObject):
 
     @property
     def is_scanning(self) -> bool:
-        """Current scanning state."""
         return self._is_scanning
 
     def check_camera_availability(self) -> bool:
-        """Check if camera is available before starting scan."""
-        try:
-            return self._camera_service.is_camera_available()
-        except Exception as e:
-            logger.error("Error checking camera: %s", e)
-            return False
+        # CameraService.is_camera_available уже обрабатывает исключения внутри
+        return CameraService.is_camera_available(self.camera_id)
 
     def start_scanning(self) -> None:
-        """Start QR scanning thread only if camera is available."""
         if self._is_scanning:
             logger.warning("Scanning already active")
             return
@@ -159,18 +134,15 @@ class QRScannerViewModel(QObject):
         self.scan_started.emit()
 
     def stop_scanning(self) -> None:
-        """Stop QR scanning thread."""
         if not self._is_scanning:
             return
-
         logger.info("Stopping QR scanning")
-
         if self._worker:
-            self._worker.stop()
+            # Используем сигнал для безопасной остановки из другого потока
+            self._worker.stop_requested.emit()
 
     @Slot()
     def _on_thread_finished(self) -> None:
-        """Handle thread shutdown."""
         logger.info("QR scanning stopped")
         self._thread = None
         self._worker = None
