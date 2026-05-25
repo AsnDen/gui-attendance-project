@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import time, timedelta
 
-from PySide6.QtCore import QDate, Signal
+from PySide6.QtCore import QDate, SignalInstance
 
 from roll.core import BaseEvent, EventTemplate
 
@@ -23,11 +23,11 @@ class ICalendarPanelViewModel(ABC):
             Passes the date string (str) in "yyyy-MM-dd" format.
     """
 
-    event_changed: Signal
-    template_changed: Signal
-    show_warning: Signal
-    show_success: Signal
-    date_changed: Signal
+    event_changed: SignalInstance
+    template_changed: SignalInstance
+    show_warning: SignalInstance
+    show_success: SignalInstance
+    date_changed: SignalInstance
 
     @property
     @abstractmethod
