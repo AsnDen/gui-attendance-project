@@ -182,3 +182,15 @@ class IIdentifierReaderService(ABC):
 
         Returns sha256 of data read.
         """
+
+
+class ICameraAvailabilityService(ABC):
+    """Interface for checking camera availability."""
+
+    @abstractmethod
+    def is_camera_available(self) -> bool:
+        """Check if specified camera is available."""
+
+    @abstractmethod
+    def get_available_cameras(self) -> list[int]:
+        """Get list of available camera IDs."""
