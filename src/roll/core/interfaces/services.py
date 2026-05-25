@@ -259,7 +259,7 @@ class IIdentifierService(ABC):
         pass
 
     @abstractmethod
-    def add_identifier(self, hash_value: str, person_id: int) -> None:
+    def add_identifier(self, hash_value: str, person_id: int) -> int:
         pass
 
     @abstractmethod
