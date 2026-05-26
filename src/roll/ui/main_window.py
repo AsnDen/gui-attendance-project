@@ -1,17 +1,30 @@
+from datetime import date
 from typing import override
 
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QWidget
 
+from roll.core import AttendanceStatus, BaseEvent
+from roll.core.interfaces import IAttendanceService, IIdentifierService, IPersonService
 from roll.ui.panels import CalendarPanel, DayEventsPanel, ScannerPanel
 from roll.view_models import ViewModelFactory
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, view_model_factory: ViewModelFactory) -> None:
+    def __init__(
+        self,
+        view_model_factory: ViewModelFactory,
+        attendance_service: IAttendanceService,
+        person_service: IPersonService,
+        identifier_service: IIdentifierService,
+    ) -> None:
         super().__init__()
 
-        self._view_model_factory: ViewModelFactory = view_model_factory
+        self._view_model_factory = view_model_factory
+        self._attendance_service = attendance_service
+        self._person_service = person_service
+        self._identifier_service = identifier_service
+
         self._setup_ui()
         self._setup_connections()
 
@@ -39,11 +52,11 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         group_menu = menubar.addMenu("👥 Группа")
         manage_action = group_menu.addAction("Управление группой (привязка QR)")
-        _ = manage_action.triggered.connect(self._manage_group)
+        manage_action.triggered.connect(self._manage_group)
 
         help_menu = menubar.addMenu("❓ Помощь")
         about_action = help_menu.addAction("О программе")
-        _ = about_action.triggered.connect(self._show_about)
+        about_action.triggered.connect(self._show_about)
 
         self.statusBar().showMessage("Готов")
         self.statusBar().setStyleSheet(
@@ -51,57 +64,54 @@ class MainWindow(QMainWindow):
         )
 
     def _setup_connections(self) -> None:
-        # _ = self._calendar_panel.date_selected.connect(self._on_date_selected)
-        _ = self._scanner_panel.qr_scanned.connect(self._on_qr_scanned)
-        # _ = self._day_panel.subject_selected.connect(self._on_subject_selected)
+        self._calendar_panel.date_selected.connect(self._on_date_selected)
+        self._scanner_panel.qr_scanned.connect(self._on_qr_scanned)
+        self._day_panel.event_selected.connect(self._on_event_selected)
 
     def _on_date_selected(self, date_str: str) -> None:
-        # self._day_panel.set_date(date_str)
-        # self.statusBar().showMessage(f"Выбрана дата: {date_str}")
-        pass
+        self._day_panel.set_date(date_str)
+        # Загружаем события на выбранную дату
+        events = self._view_model_factory.event_service.get_day_events(date.fromisoformat(date_str))
+        self._day_panel.set_events(list(events))
+        self.statusBar().showMessage(f"Выбрана дата: {date_str}")
 
-    def _on_subject_selected(self, schedule_item) -> None:
-        # self._scanner_panel.update_status(
-        #     f"✅ Предмет: {schedule_item.subject_name} | Сканируйте QR-код"
-        # )
-        # self.statusBar().showMessage(f"Выбран предмет: {schedule_item.subject_name}")
-        pass
+    def _on_event_selected(self, event: BaseEvent) -> None:
+        self._scanner_panel.update_status(
+            f"✅ Предмет: {event.label} | Сканируйте QR-код"
+        )
+        self.statusBar().showMessage(f"Выбран предмет: {event.label}")
 
     def _on_qr_scanned(self, qr_data: str) -> None:
-        # current_item = self._day_panel.get_current_item()
-        #
-        # if not current_item:
-        #     self._scanner_panel.update_status(
-        #         "❌ Сначала выберите предмет в левой панели!", True
-        #     )
-        #     return
-        #
-        # member = self._db.get_member_by_qr(qr_data)
-        #
-        # if not member:
-        #     self._scanner_panel.update_status(
-        #         f"❌ Участник с QR '{qr_data[:20]}...' не найден! Привяжите QR в меню Группа",
-        #         True,
-        #     )
-        #     return
-        #
-        # success = self._db.mark_attendance(current_item.id, member.id)
-        #
-        # if success:
-        #     self._scanner_panel.update_status(f"✅ ОТМЕЧЕН: {member.name}")
-        #     self.statusBar().showMessage(f"Отмечен {member.name}")
-        #     QMessageBox.information(self, "Успех", f"✅ {member.name} отмечен(а)")
-        #     self._day_panel.refresh()
-        # else:
-        #     self._scanner_panel.update_status(
-        #         f"⚠️ {member.name} уже отмечен(а) на этом занятии!", True
-        #     )
-        pass
+        current_event = self._day_panel.get_current_event()
+        if not current_event:
+            self._scanner_panel.update_status(
+                "❌ Сначала выберите предмет в левой панели!", True
+            )
+            return
+
+        person = self._identifier_service.find_person_by_hash(qr_data)
+        if not person:
+            self._scanner_panel.update_status(
+                f"❌ Участник с QR '{qr_data[:20]}...' не найден! Привяжите QR в меню Группа",
+                True,
+            )
+            return
+
+        try:
+            attendance_id = self._attendance_service.add_attendance(
+                person.person_id, current_event.event_id, AttendanceStatus.PRESENT
+            )
+            self._scanner_panel.update_status(f"✅ ОТМЕЧЕН: {person.label}")
+            self.statusBar().showMessage(f"Отмечен {person.label}")
+            QMessageBox.information(self, "Успех", f"✅ {person.label} отмечен(а)")
+            # Здесь можно обновить отображение посещаемости, если нужно
+            # self._day_panel.refresh()
+        except Exception as e:
+            self._scanner_panel.update_status(f"⚠️ {person.label} уже отмечен(а) или ошибка: {e}", True)
 
     def _manage_group(self) -> None:
-        # dialog = GroupManagementDialog(self, self._db)
-        # _ = dialog.exec()
-        pass
+        # TODO: реализовать диалог управления группой
+        QMessageBox.information(self, "Информация", "Управление группой будет реализовано позже.")
 
     def _show_about(self) -> None:
         QMessageBox.about(

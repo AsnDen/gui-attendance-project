@@ -41,3 +41,6 @@ class FrameCaptureError(Exception):
 class QRReaderError(Exception):
     """Base QR reader exception."""
 
+
+class IdentifierNotFoundError(Exception):
+    """Raised when identifier does not exist."""

@@ -17,14 +17,15 @@ class ViewModelFactory:
         # identifier_reader_service: IIdentifierReaderService,
         # verification_service: IVerificationService,
     ):
-        self._attendance_service: IAttendanceService = attendance_service
-        self._event_service: IEventService = event_service
-        self._person_service: IPersonService = person_service
-        # self._identifier_service: IIdentifierService = identifier_service
-        # self._identifier_reader_service: IIdentifierReaderService = (
-        #     identifier_reader_service
-        # )
-        # self._verification_service: IVerificationService = verification_service
+    
+        self._attendance_service = attendance_service
+        self._event_service = event_service
+        self._person_service = person_service
+        self._identifier_service = identifier_service
 
     def create_calendar_view_moder(self) -> CalendarPanelViewModel:
         return CalendarPanelViewModel(self._event_service)
+
+    @property
+    def event_service(self) -> IEventService:
+        return self._event_service

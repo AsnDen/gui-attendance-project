@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 class EventService(IEventService):
     def __init__(self, repo: IEventRepository) -> None:
-        """Initializes event service with event repository."""
         self.repo: IEventRepository = repo
         logger.info("Initialized event service")
 
@@ -31,10 +30,8 @@ class EventService(IEventService):
     ) -> int:
         if label == "":
             raise EmptyLabelError
-
         if duration.total_seconds() == 0:
             raise ZeroDurationError
-
         event = EventUpdateDTO(
             label=label,
             start_time=start_time,
@@ -46,25 +43,19 @@ class EventService(IEventService):
     @override
     def get_event(self, event_id: int) -> BaseEvent:
         event = self.repo.get(event_id)
-
         if event is None:
             raise EventNotFoundError
-
         return event
 
     @override
     def get_all_events(self) -> tuple[BaseEvent, ...]:
         return self.repo.get_all()
 
-    # TODO (asnden): REDO THIS
     @override
-    def get_day_events(self, date: date) -> tuple[BaseEvent, ...]:
+    def get_day_events(self, target_date: date) -> tuple[BaseEvent, ...]:
+        """Возвращает события, начинающиеся в указанную дату."""
         events = self.repo.get_all()
-        ans: list[BaseEvent] = []
-        for event in events:
-            if event.start_time.date() == date:
-                ans += [event]
-        return tuple(ans)
+        return tuple(e for e in events if e.start_time.date() == target_date)
 
     @override
     def update_event(
@@ -78,10 +69,8 @@ class EventService(IEventService):
     ) -> None:
         if label == "":
             raise EmptyLabelError
-
         if duration is not None and duration.total_seconds() == 0:
             raise ZeroDurationError
-
         event = EventUpdateDTO(
             label=label,
             start_time=start_time,

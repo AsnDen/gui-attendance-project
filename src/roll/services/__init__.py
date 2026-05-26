@@ -10,9 +10,11 @@ from roll.services.exceptions import (
     PersonNotFoundError,
     QRReaderError,
     ZeroDurationError,
+    IdentifierNotFoundError,
 )
 from roll.services.person_service import PersonService
 from roll.services.qr_reader_service import QRIdentifierReaderService
+from roll.services.identifier_service import IdentifierService
 
 __all__ = [
     "AttendanceNotFoundError",
@@ -28,4 +30,6 @@ __all__ = [
     "QRIdentifierReaderService",
     "QRReaderError",
     "ZeroDurationError",
+    "IdentifierNotFoundError",
+    "IdentifierService",
 ]

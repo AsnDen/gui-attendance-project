@@ -4,19 +4,24 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QListWidget,
+    QListWidgetItem,
     QPushButton,
     QVBoxLayout,
 )
 
+from roll.core import BaseEvent
+
 
 class DayEventsPanel(QFrame):
-    event_selected: Signal = Signal(object)
+    event_selected = Signal(object)  # передаёт BaseEvent
 
     def __init__(self) -> None:
         super().__init__()
-        self._current_date = None
-        self._current_schedule_item = None
+        self._current_date: str | None = None
+        self._current_events: list[BaseEvent] = []
+        self._selected_event: BaseEvent | None = None
         self._setup_ui()
+        self._connect_signals()
 
     def _setup_ui(self) -> None:
         self.setMinimumWidth(300)
@@ -44,20 +49,16 @@ class DayEventsPanel(QFrame):
         layout.addWidget(self._date_label)
 
         self._subjects_list: QListWidget = QListWidget()
-        # self._subjects_list.itemClicked.connect(self._on_subject_click)
-        # self._subjects_list.itemDoubleClicked.connect(self._open_attendance)
         layout.addWidget(self._subjects_list)
 
         btn_layout = QHBoxLayout()
         self._edit_btn: QPushButton = QPushButton("✏️ Ред.")
         self._edit_btn.setObjectName("edit")
         self._edit_btn.setEnabled(False)
-        # self._edit_btn.clicked.connect(self._edit_subject)
 
         self._delete_btn: QPushButton = QPushButton("🗑️ Удалить")
         self._delete_btn.setObjectName("delete")
         self._delete_btn.setEnabled(False)
-        # self._delete_btn.clicked.connect(self._delete_subject)
 
         btn_layout.addWidget(self._edit_btn)
         btn_layout.addWidget(self._delete_btn)
@@ -66,7 +67,6 @@ class DayEventsPanel(QFrame):
         self._attendance_btn: QPushButton = QPushButton("📋 Отметить посещаемость")
         self._attendance_btn.setObjectName("attendance")
         self._attendance_btn.setEnabled(False)
-        # self._attendance_btn.clicked.connect(self._open_attendance)
         layout.addWidget(self._attendance_btn)
 
         self._selected_label: QLabel = QLabel("⚡ Выберите предмет")
@@ -74,84 +74,48 @@ class DayEventsPanel(QFrame):
         self._selected_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self._selected_label)
 
+    def _connect_signals(self) -> None:
+        self._subjects_list.itemClicked.connect(self._on_item_clicked)
+
     def set_date(self, date: str) -> None:
         self._current_date = date
         self._date_label.setText(f"📅 {date}")
-        # self._load_subjects()
-        self._current_schedule_item = None
-        self._selected_label.setText("⚡ Выберите предмет")
-        self._edit_btn.setEnabled(False)
-        self._delete_btn.setEnabled(False)
-        self._attendance_btn.setEnabled(False)
+        self._selected_event = None
+        self._update_selection_ui()
 
-    #
-    # def _load_subjects(self) -> None:
-    #     self._subjects_list.clear()
-    #     if not self._current_date:
-    #         return
-    #
-    #     items = self._db.get_schedule_for_date(self._current_date)
-    #     for item in items:
-    #         display_text = f"📖 {item.subject_name}"
-    #         if item.topic:
-    #             display_text += f"\n   └ {item.topic}"
-    #         display_text += f"\n   👥 Присутствует: {len(item.member_ids)} чел."
-    #
-    #         list_item = QListWidgetItem(display_text)
-    #         list_item.setData(Qt.UserRole, item.id)
-    #         self._subjects_list.addItem(list_item)
-    #
-    # def _on_subject_click(self, item) -> None:
-    #     item_id = item.data(Qt.UserRole)
-    #     items = self._db.get_schedule_for_date(self._current_date)
-    #     self._current_schedule_item = next((i for i in items if i.id == item_id), None)
-    #     if self._current_schedule_item:
-    #         self._selected_label.setText(
-    #             f"✅ ВЫБРАН: {self._current_schedule_item.subject_name}"
-    #         )
-    #         self._edit_btn.setEnabled(True)
-    #         self._delete_btn.setEnabled(True)
-    #         self._attendance_btn.setEnabled(True)
-    #         self.subject_selected.emit(self._current_schedule_item)
-    #
-    # def _edit_subject(self) -> None:
-    #     if self._current_schedule_item:
-    #         dialog = EditScheduleDialog(self, self._current_schedule_item)
-    #         if dialog.exec():
-    #             new_name, new_topic = dialog.get_data()
-    #             if new_name:
-    #                 self._current_schedule_item.subject_name = new_name
-    #                 self._current_schedule_item.topic = new_topic
-    #                 self._db.update_schedule_item(self._current_schedule_item)
-    #                 self._load_subjects()
-    #                 QMessageBox.information(self, "Успех", "Предмет обновлён!")
-    #
-    # def _delete_subject(self) -> None:
-    #     if (
-    #         self._current_schedule_item
-    #         and QMessageBox.question(
-    #             self,
-    #             "Подтверждение",
-    #             f"Удалить '{self._current_schedule_item.subject_name}'?",
-    #         )
-    #         == QMessageBox.Yes
-    #     ):
-    #         self._db.delete_schedule_item(self._current_schedule_item.id)
-    #         self._current_schedule_item = None
-    #         self._load_subjects()
-    #         self._selected_label.setText("⚡ Выберите предмет")
-    #         self._edit_btn.setEnabled(False)
-    #         self._delete_btn.setEnabled(False)
-    #         self._attendance_btn.setEnabled(False)
-    #
-    # def _open_attendance(self) -> None:
-    #     if self._current_schedule_item:
-    #         dialog = AttendanceDialog(self, self._db, self._current_schedule_item)
-    #         dialog.exec()
-    #         self._load_subjects()
-    #
-    # def get_current_item(self) -> None:
-    #     return self._current_schedule_item
-    #
-    # def refresh(self) -> None:
-    #     self._load_subjects()
+    def set_events(self, events: list[BaseEvent]) -> None:
+        self._current_events = events
+        self._subjects_list.clear()
+        for ev in events:
+            display = f"📖 {ev.label}\n   🕒 {ev.start_time.strftime('%H:%M')} ({ev.duration.seconds // 60} мин)"
+            if ev.description:
+                display += f"\n   📝 {ev.description}"
+            item = QListWidgetItem(display)
+            item.setData(Qt.UserRole, ev.event_id)
+            self._subjects_list.addItem(item)
+
+    def _on_item_clicked(self, item: QListWidgetItem) -> None:
+        event_id = item.data(Qt.UserRole)
+        self._selected_event = next(
+            (e for e in self._current_events if e.event_id == event_id), None
+        )
+        self._update_selection_ui()
+        if self._selected_event:
+            self.event_selected.emit(self._selected_event)
+
+    def _update_selection_ui(self) -> None:
+        enabled = self._selected_event is not None
+        self._edit_btn.setEnabled(enabled)
+        self._delete_btn.setEnabled(enabled)
+        self._attendance_btn.setEnabled(enabled)
+        if self._selected_event:
+            self._selected_label.setText(f"✅ ВЫБРАН: {self._selected_event.label}")
+        else:
+            self._selected_label.setText("⚡ Выберите предмет")
+
+    def get_current_event(self) -> BaseEvent | None:
+        return self._selected_event
+
+    def refresh(self) -> None:
+        # Метод для обновления списка (может быть вызван извне)
+        pass
