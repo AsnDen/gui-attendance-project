@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
+from roll.core import BaseEventTemplate
 from roll.core.entities import AttendanceStatus
 
 if TYPE_CHECKING:
@@ -171,6 +172,42 @@ class IEventService(ABC):
         Raises:
             EventNotFoundError: event_id is invalid.
         """
+
+
+class IEventTemplateService(ABC):
+    @abstractmethod
+    def get_template(self, event_template_id: int) -> BaseEventTemplate:
+        pass
+
+    @abstractmethod
+    def get_all_templates(self) -> tuple[BaseEventTemplate, ...]:
+        pass
+
+    @abstractmethod
+    def add_template(
+        self,
+        label: str,
+        start_time: time,
+        duration: timedelta,
+        description: str = "",
+    ) -> int:
+        pass
+
+    @abstractmethod
+    def update_template(
+        self,
+        event_template_id: int,
+        *,
+        label: str | None = None,
+        start_time: time | None = None,
+        duration: timedelta | None = None,
+        description: str | None = None,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def delete_template(self, event_template_id: int) -> None:
+        pass
 
 
 class IAttendanceService(ABC):

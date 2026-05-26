@@ -42,7 +42,7 @@ class EventUpdateDTO(EventShema):
 
 
 @dataclass(frozen=True)
-class EventTemplateUpdateDTO(EventShema):
+class EventTemplateUpdateDTO(EventTemplateShema):
     """Data transfer object for event template."""
 
 

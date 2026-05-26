@@ -16,3 +16,7 @@ class EmptyLabelError(Exception):
 
 class ZeroDurationError(Exception):
     pass
+
+
+class EventTemplateNotFoundError(Exception):
+    pass

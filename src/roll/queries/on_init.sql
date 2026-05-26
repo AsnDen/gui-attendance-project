@@ -21,6 +21,14 @@ CREATE TABLE IF NOT EXISTS events (
     duration_seconds INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS event_templates (
+    template_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label TEXT NOT NULL CHECK (label NOT IN ('')),
+    description TEXT,
+    start_time TEXT NOT NULL, -- Format: 'HH-MM-SS'
+    duration_seconds INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS attendance (
     attendance_id INTEGER PRIMARY KEY AUTOINCREMENT,
     person_id INTEGER NOT NULL,
