@@ -335,8 +335,35 @@ class IIdentifierReaderService(ABC):
     """Interface for reading identifier data."""
 
     @abstractmethod
-    def read_identifier(self) -> str:
+    def read_identifier(self) -> str | None:
         """Reads identifier data.
 
-        Returns sha256 of data read.
+        Returns sha256 of data read, or None if no QR code found.
         """
+
+
+class ICameraAvailabilityService(ABC):
+    """Interface for checking camera availability."""
+
+    @staticmethod
+    @abstractmethod
+    def is_camera_available(camera_id: int) -> bool:
+        """
+        Check if camera is available.
+
+        "Available" means:
+        - the camera device exists,
+        - can be opened by OpenCV,
+        - and a frame can be captured successfully.
+
+        Args:
+            camera_id: OpenCV camera device identifier (0,1,2...)
+
+        Returns:
+            True if camera is available, False otherwise.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def get_available_cameras() -> list[int]:
+        """Get list of available camera IDs (0..9)."""

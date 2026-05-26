@@ -26,15 +26,18 @@ from roll.core.entities import (
     QRIdentifier,
 )
 from roll.core.init_database import init_database
-from roll.core.interfaces import (
+from roll.core.interfaces.repositories import (
     IAttendanceRepository,
-    IAttendanceService,
     IEventRepository,
+    IIdentifierRepository,
+    IPersonRepository,
+)
+from roll.core.interfaces.services import (
+    IAttendanceService,
+    ICameraAvailabilityService,
     IEventService,
     IIdentifierReaderService,
-    IIdentifierRepository,
     IIdentifierService,
-    IPersonRepository,
     IPersonService,
     IVerificationService,
 )
@@ -59,6 +62,7 @@ __all__ = [
     "EventUpdateDTO",
     "IAttendanceRepository",
     "IAttendanceService",
+    "ICameraAvailabilityService",
     "IEventRepository",
     "IEventService",
     "IIdentifierReaderService",
