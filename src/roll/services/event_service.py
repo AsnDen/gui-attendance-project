@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from typing import TYPE_CHECKING, override
 
 from roll.core import BaseEvent, EventUpdateDTO, IEventRepository, IEventService
@@ -54,6 +55,16 @@ class EventService(IEventService):
     @override
     def get_all_events(self) -> tuple[BaseEvent, ...]:
         return self.repo.get_all()
+
+    # TODO (asnden): REDO THIS
+    @override
+    def get_day_events(self, date: date) -> tuple[BaseEvent, ...]:
+        events = self.repo.get_all()
+        ans: list[BaseEvent] = []
+        for event in events:
+            if event.start_time.date() == date:
+                ans += [event]
+        return tuple(ans)
 
     @override
     def update_event(

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from roll.core.entities import AttendanceStatus
@@ -108,6 +108,10 @@ class IEventService(ABC):
         Returns:
             tuple of BaseEvent: all saved events.
         """
+
+    @abstractmethod
+    def get_day_events(self, date: date) -> tuple[BaseEvent, ...]:
+        pass
 
     @abstractmethod
     def add_event(
