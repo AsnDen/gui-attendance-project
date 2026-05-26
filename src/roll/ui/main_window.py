@@ -1,5 +1,3 @@
-# src/roll/ui/main_window.py
-import logging
 from typing import override
 
 from PySide6.QtCore import QEvent
@@ -11,9 +9,6 @@ from roll.ui.dialogs import GroupManagementDialog, SubjectsManagementDialog, Man
 from roll.ui.panels import EventDetailsPanel, AttendanceHistoryPanel, CalendarPanel
 from roll.view_models import QRScannerViewModel, ViewModelFactory
 from roll.view_models.subjects_management_viewmodel import SubjectsManagementViewModel
-
-logger = logging.getLogger(__name__)
-user_logger = logging.getLogger("user_actions")
 
 
 class MainWindow(QMainWindow):
@@ -51,14 +46,12 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(10)
         main_layout.setContentsMargins(10, 10, 10, 10)
 
-        # Left panel: event details and attendance status
         self._details_panel = EventDetailsPanel(
             attendance_service=self._attendance_service,
             person_service=self._person_service
         )
         main_layout.addWidget(self._details_panel)
 
-        # Center panel: attendance history for selected subject
         self._history_panel = AttendanceHistoryPanel(
             attendance_service=self._attendance_service,
             person_service=self._person_service,
@@ -66,7 +59,6 @@ class MainWindow(QMainWindow):
         )
         main_layout.addWidget(self._history_panel, 1)
 
-        # Right panel: calendar and daily schedule
         calendar_view_model = self._view_model_factory.create_calendar_view_model()
         self._calendar_panel = CalendarPanel(
             calendar_view_model,
@@ -75,7 +67,6 @@ class MainWindow(QMainWindow):
         )
         main_layout.addWidget(self._calendar_panel)
 
-        # Menu bar
         menubar = self.menuBar()
         group_menu = menubar.addMenu("Группа")
         manage_action = group_menu.addAction("Управление группой (привязка QR)")
@@ -108,7 +99,6 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Выбор сброшен")
 
     def _on_data_changed(self):
-        """Refresh history and details when events are added/deleted/edited."""
         if self._current_selected_event:
             self._history_panel.refresh()
             self._details_panel.refresh()
@@ -129,7 +119,6 @@ class MainWindow(QMainWindow):
         try:
             self._attendance_service.add_attendance(person.person_id, event.event_id, AttendanceStatus.PRESENT)
             self.statusBar().showMessage(f"Отмечен: {person.label}")
-            user_logger.info(f"Отмечен {person.label} на {event.label}")
             self._details_panel.mark_person(person.person_id)
             self._history_panel.refresh()
         except Exception as e:
@@ -155,10 +144,9 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _on_subjects_changed(self):
-        # Refresh schedule for current date
         current_date = self._calendar_panel._calendar.selectedDate()
-        self._calendar_panel._load_schedule_for_date(current_date)
-        # Reset selection if the selected subject was deleted
+        self._calendar_panel._view_model.select_date(current_date)
+        self._calendar_panel._view_model.load_events()
         if self._current_selected_event:
             try:
                 self._event_service.get_event(self._current_selected_event.event_id)
