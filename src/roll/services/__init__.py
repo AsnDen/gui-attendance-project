@@ -1,5 +1,6 @@
 from roll.services.attendance_service import AttendanceService
 from roll.services.event_service import EventService
+from roll.services.event_template_service import EventTemplateService
 from roll.services.exceptions import (
     AttendanceNotFoundError,
     EmptyLabelError,
@@ -15,6 +16,7 @@ __all__ = [
     "EmptyLabelError",
     "EventNotFoundError",
     "EventService",
+    "EventTemplateService",
     "PersonNotFoundError",
     "PersonService",
     "ZeroDurationError",

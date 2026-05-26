@@ -2,7 +2,13 @@ from datetime import UTC, date, datetime, time, timedelta
 
 from PySide6.QtCore import QDate, QObject, Signal
 
-from roll.core import BaseEvent, EventTemplate, IEventService
+from roll.core import (
+    BaseEvent,
+    BaseEventTemplate,
+    EventTemplate,
+    IEventService,
+    IEventTemplateService,
+)
 
 
 class CalendarPanelViewModel(QObject):
@@ -28,12 +34,15 @@ class CalendarPanelViewModel(QObject):
     show_success: Signal = Signal(str)
     date_changed: Signal = Signal(str)
 
-    def __init__(self, event_serivce: IEventService) -> None:
+    def __init__(
+        self, event_serivce: IEventService, template_service: IEventTemplateService
+    ) -> None:
         super().__init__()
         self._event_service: IEventService = event_serivce
+        self._template_serivce: IEventTemplateService = template_service
 
         self._events: list[BaseEvent] = []
-        self._templates: list[EventTemplate] = []
+        self._templates: list[BaseEventTemplate] = []
         self._selected_date: str = datetime.now(tz=UTC).date().isoformat()
 
     @property
@@ -46,7 +55,7 @@ class CalendarPanelViewModel(QObject):
         return self._events
 
     @property
-    def templates(self) -> list[EventTemplate]:
+    def templates(self) -> list[BaseEventTemplate]:
         """Gets all available event templates.
 
         Returns:
@@ -93,7 +102,8 @@ class CalendarPanelViewModel(QObject):
         Args:
             date: The date object selected by the user in the UI.
         """
-        raise NotImplementedError
+        self._templates = list(self._template_serivce.get_all_templates())
+        self.template_changed.emit(self._templates)
 
     def add_new_event(
         self, label: str, description: str, start_time: time, duration: timedelta
@@ -137,7 +147,18 @@ class CalendarPanelViewModel(QObject):
             start_time: Default start time for this template.
             duration: Default duration for this template.
         """
-        raise NotImplementedError
+        if not label.strip():
+            self.show_warning.emit("Название шаблона не может быть пустым!")
+            return
+
+        _ = self._template_serivce.add_template(
+            label=label,
+            description=description,
+            start_time=start_time,
+            duration=duration,
+        )
+        self.show_success.emit(f"Шаблон '{label}' успешно создан!")
+        self.load_event_templates()
 
     def quick_add_template(self, template: EventTemplate) -> None:
         """Quickly adds an existing event to the selected date.
