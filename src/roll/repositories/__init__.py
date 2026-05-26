@@ -1,5 +1,6 @@
 from roll.repositories.attendance_repository import AttendanceRepository
 from roll.repositories.event_repository import EventRepository
+from roll.repositories.event_template_repository import EventTemplateRepository
 from roll.repositories.exceptions import (
     DTOValueError,
     QueryFailedExecError,
@@ -12,6 +13,7 @@ __all__ = [
     "AttendanceRepository",
     "DTOValueError",
     "EventRepository",
+    "EventTemplateRepository",
     "IdentifierRepository",
     "PersonRepository",
     "QueryFailedExecError",

@@ -10,6 +10,8 @@ Provides:
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from roll.core import BaseEventTemplate, EventTemplateUpdateDTO
+
 if TYPE_CHECKING:
     from roll.core.entities import (
         AttendanceUpdateDTO,
@@ -75,6 +77,63 @@ class IAttendanceRepository(ABC):
 
         Args:
             attendance_id: id of an attendance.
+
+        Returns:
+            bool: if operation is successfull or not.
+        """
+
+
+class IEventTemplateRepository(ABC):
+    """Interface for event repository."""
+
+    @abstractmethod
+    def get(self, event_template_id: int) -> BaseEventTemplate | None:
+        """Finds and returns event template by it's id.
+
+        Args:
+            event_template_id: id of an event template
+
+        Returns:
+            None if event template is not found.
+            BaseEventTemplate if event template is found.
+        """
+
+    @abstractmethod
+    def get_all(self) -> tuple[BaseEventTemplate, ...]:
+        """Finds all event templates saved in repository.
+
+        Returns:
+            tuple: all saved event template.
+        """
+
+    @abstractmethod
+    def add(self, event_template: EventTemplateUpdateDTO) -> int:
+        """Saves new event template in repository.
+
+        Args:
+            event_template: DTO with non-empty fields.
+
+        Returns:
+            int: id of inserted data.
+        """
+
+    @abstractmethod
+    def update(
+        self, event_template_id: int, event_template: EventTemplateUpdateDTO
+    ) -> None:
+        """Updates event template info.
+
+        Args:
+            event_template_id: id of an event.
+            event_template: DTO with fields that may be empty.
+        """
+
+    @abstractmethod
+    def delete(self, event_template_id: int) -> bool:
+        """Deletes event template from repository.
+
+        Args:
+            event_template_id: id of event.
 
         Returns:
             bool: if operation is successfull or not.
