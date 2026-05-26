@@ -120,7 +120,7 @@ class CalendarPanel(QFrame):
         if not ok or not name.strip():
             return
 
-        self._view_model.add_new_event(
+        self._view_model.add_new_template(
             label=name.strip(),
             description="",
             start_time=dt_time(9, 0),
