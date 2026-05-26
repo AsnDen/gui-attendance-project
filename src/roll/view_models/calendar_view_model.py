@@ -1,12 +1,11 @@
-from abc import ABC, abstractmethod
-from datetime import time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
-from PySide6.QtCore import QDate, SignalInstance
+from PySide6.QtCore import QDate, QObject, Signal
 
-from roll.core import BaseEvent, EventTemplate
+from roll.core import BaseEvent, EventTemplate, IEventService
 
 
-class ICalendarPanelViewModel(ABC):
+class CalendarPanelViewModel(QObject):
     """Interface for the CalendarPanel view model.
 
     Attributes:
@@ -23,57 +22,70 @@ class ICalendarPanelViewModel(ABC):
             Passes the date string (str) in "yyyy-MM-dd" format.
     """
 
-    event_changed: SignalInstance
-    template_changed: SignalInstance
-    show_warning: SignalInstance
-    show_success: SignalInstance
-    date_changed: SignalInstance
+    event_changed: Signal = Signal(list)
+    template_changed: Signal = Signal(list)
+    show_warning: Signal = Signal(str)
+    show_success: Signal = Signal(str)
+    date_changed: Signal = Signal(str)
+
+    def __init__(self, event_serivce: IEventService) -> None:
+        super().__init__()
+        self._event_service: IEventService = event_serivce
+
+        self._events: list[BaseEvent] = []
+        self._templates: list[EventTemplate] = []
+        self._selected_date: str = datetime.now(tz=UTC).date().isoformat()
 
     @property
-    @abstractmethod
     def events(self) -> list[BaseEvent]:
         """Gets all events for selected date.
 
         Returns:
             List of BaseEvent: all events for the selected date.
         """
+        return self._events
 
     @property
-    @abstractmethod
     def templates(self) -> list[EventTemplate]:
         """Gets all available event templates.
 
         Returns:
             list[EventTemplate]: A list of event templates for the quick-add panel.
         """
+        return self._templates
 
     @property
-    @abstractmethod
     def selected_date(self) -> str:
         """Gets selected date.
 
         Returns:
             str: date in format yyyy-MM-dd.
         """
+        return self._selected_date
 
-    @abstractmethod
-    def load_events(self) -> None:
+    def select_date(self, date: QDate) -> None:
         """Loads events from the event service.
 
         Triggers the `event_changed` signal once data fetching and
         filtering are complete.
         """
+        new_date_str = date.toString("yyyy-MM-dd")
+        if self._selected_date != new_date_str:
+            self._selected_date = new_date_str
+            self.date_changed.emit(self._selected_date)
 
-    @abstractmethod
-    def load_event_templates(self) -> None:
+    def load_events(self) -> None:
         """Loads event templates from the event tepmlate service.
 
         Triggers the `template_changed` signal once data fetching and
         filtering are complete.
+        raise NotImplementedError
         """
+        current_date = date.fromisoformat(self._selected_date)
+        self._events = list(self._event_service.get_day_events(current_date))
+        self.event_changed.emit(self._events)
 
-    @abstractmethod
-    def select_date(self, date: QDate) -> None:
+    def load_event_templates(self) -> None:
         """Handles the date selection event from the calendar widget.
 
         Updates the internal state and emits the `date_changed` signal.
@@ -81,8 +93,8 @@ class ICalendarPanelViewModel(ABC):
         Args:
             date: The date object selected by the user in the UI.
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def add_new_event(
         self, label: str, description: str, start_time: time, duration: timedelta
     ) -> None:
@@ -97,8 +109,23 @@ class ICalendarPanelViewModel(ABC):
             start_time: The event start time.
             duration: The event duration.
         """
+        if not label.strip():
+            self.show_warning.emit("Название события не может быть пустым!")
+            return
 
-    @abstractmethod
+        event_date = date.fromisoformat(self._selected_date)
+        full_start_time = datetime.combine(event_date, start_time)
+
+        _ = self._event_service.add_event(
+            label=label,
+            description=description,
+            start_time=full_start_time,
+            duration=duration,
+        )
+
+        self.show_success.emit(f"Предмет '{label}' успешно добавлен!")
+        self.load_events()
+
     def add_new_template(
         self, label: str, description: str, start_time: time, duration: timedelta
     ) -> None:
@@ -110,8 +137,8 @@ class ICalendarPanelViewModel(ABC):
             start_time: Default start time for this template.
             duration: Default duration for this template.
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def quick_add_template(self, template: EventTemplate) -> None:
         """Quickly adds an existing event to the selected date.
 
@@ -120,3 +147,9 @@ class ICalendarPanelViewModel(ABC):
         Args:
             template: The EventTemplate object selected from the templates list.
         """
+        self.add_new_event(
+            label=template.label,
+            description=template.description,
+            start_time=template.start_time,
+            duration=template.duration,
+        )

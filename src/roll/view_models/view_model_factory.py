@@ -1,9 +1,9 @@
 from roll.core import (
     IAttendanceService,
-    ICalendarPanelViewModel,
     IEventService,
     IPersonService,
 )
+from roll.view_models.calendar_view_model import CalendarPanelViewModel
 
 
 class ViewModelFactory:
@@ -26,5 +26,5 @@ class ViewModelFactory:
         # )
         # self._verification_service: IVerificationService = verification_service
 
-    def create_calendar_view_moder(self) -> ICalendarPanelViewModel:
-        pass
+    def create_calendar_view_moder(self) -> CalendarPanelViewModel:
+        return CalendarPanelViewModel(self._event_service)

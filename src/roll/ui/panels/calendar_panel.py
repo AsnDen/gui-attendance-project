@@ -15,22 +15,23 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from roll.core import EventTemplate, ICalendarPanelViewModel
+from roll.core import EventTemplate
+from roll.view_models import CalendarPanelViewModel
 
 
 class CalendarPanel(QFrame):
     date_selected: Signal = Signal(str)
 
-    def __init__(self, view_model: ICalendarPanelViewModel) -> None:
+    def __init__(self, view_model: CalendarPanelViewModel) -> None:
         super().__init__()
-        self._view_model: ICalendarPanelViewModel = view_model
+        self._view_model: CalendarPanelViewModel = view_model
 
+        self._view_model.setParent(self)
         self._setup_ui()
-        # TODO: (asnden): uncomment when ICalendarPanelViewModel child is done.
-        # self._connect_signals()
-        #
-        # self._view_model.load_event_templates()
-        # self._view_model.load_events()
+        self._connect_signals()
+
+        self._view_model.load_event_templates()
+        self._view_model.load_events()
 
     def _setup_ui(self) -> None:
         self.setMinimumWidth(350)

@@ -21,12 +21,10 @@ from roll.core.interfaces.services import (
     IPersonService,
     IVerificationService,
 )
-from roll.core.interfaces.view_models import ICalendarPanelViewModel
 
 __all__ = [
     "IAttendanceRepository",
     "IAttendanceService",
-    "ICalendarPanelViewModel",
     "IEventRepository",
     "IEventService",
     "IIdentifierReaderService",

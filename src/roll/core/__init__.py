@@ -29,7 +29,6 @@ from roll.core.init_database import init_database
 from roll.core.interfaces import (
     IAttendanceRepository,
     IAttendanceService,
-    ICalendarPanelViewModel,
     IEventRepository,
     IEventService,
     IIdentifierReaderService,
@@ -60,7 +59,6 @@ __all__ = [
     "EventUpdateDTO",
     "IAttendanceRepository",
     "IAttendanceService",
-    "ICalendarPanelViewModel",
     "IEventRepository",
     "IEventService",
     "IIdentifierReaderService",
