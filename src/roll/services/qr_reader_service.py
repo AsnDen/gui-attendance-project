@@ -44,6 +44,12 @@ class QRIdentifierReaderService(IIdentifierReaderService):
         """Ensure camera is closed on object destruction."""
         self._close()
 
+    def capture_frame(self) -> tuple[bool, any]:
+        """Захватывает кадр с камеры. Возвращает (success, frame)."""
+        if self._cap is None:
+            raise CameraUnavailableError(f"Camera {self.camera_id} is not opened")
+        return self._cap.read()
+
     @override
     def read_identifier(self) -> str | None:
         """Read single frame from open camera and extract QR hash."""

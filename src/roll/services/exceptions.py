@@ -18,7 +18,6 @@ class ZeroDurationError(Exception):
     pass
 
 
-<<<<<<< HEAD
 class QueryFailedPrepareError(Exception):
     pass
 
@@ -45,7 +44,7 @@ class QRReaderError(Exception):
 
 class IdentifierNotFoundError(Exception):
     """Raised when identifier does not exist."""
-=======
+
+
 class EventTemplateNotFoundError(Exception):
     pass
->>>>>>> upstream/ui

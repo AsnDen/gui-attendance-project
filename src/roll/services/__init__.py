@@ -25,11 +25,8 @@ __all__ = [
     "EmptyLabelError",
     "EventNotFoundError",
     "EventService",
-<<<<<<< HEAD
-    "FrameCaptureError",
-=======
     "EventTemplateService",
->>>>>>> upstream/ui
+    "FrameCaptureError",
     "PersonNotFoundError",
     "PersonService",
     "QRIdentifierReaderService",

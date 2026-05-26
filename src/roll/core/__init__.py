@@ -29,6 +29,7 @@ from roll.core.init_database import init_database
 from roll.core.interfaces.repositories import (
     IAttendanceRepository,
     IEventRepository,
+    IEventTemplateRepository,
     IIdentifierRepository,
     IPersonRepository,
 )
@@ -36,7 +37,6 @@ from roll.core.interfaces.services import (
     IAttendanceService,
     ICameraAvailabilityService,
     IEventService,
-    IEventTemplateRepository,
     IEventTemplateService,
     IIdentifierReaderService,
     IIdentifierService,

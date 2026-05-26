@@ -1,3 +1,4 @@
+# src/roll/__main__.py
 import logging
 import sys
 
@@ -16,6 +17,7 @@ from roll.services import (
     EventService,
     EventTemplateService,
     PersonService,
+    IdentifierService,
 )
 from roll.ui import MainWindow
 from roll.view_models import ViewModelFactory
@@ -35,17 +37,19 @@ def main() -> None:
     person_repo = PersonRepository(db)
     event_repo = EventRepository(db)
     attendance_repo = AttendanceRepository(db)
-    identifier_repository = IdentifierRepository(db)
+    identifier_repo = IdentifierRepository(db)
     event_template_repo = EventTemplateRepository(db)
 
     person_service = PersonService(person_repo)
     event_service = EventService(event_repo)
-    attendance_serivce = AttendanceService(attendance_repo, person_repo, event_repo)
+    attendance_service = AttendanceService(attendance_repo, person_repo, event_repo)
+    identifier_service = IdentifierService(identifier_repo, person_repo)
     event_template_service = EventTemplateService(event_template_repo)
 
     view_model_factory = ViewModelFactory(
         attendance_service=attendance_service,
         event_service=event_service,
+        person_service=person_service,
         event_template_service=event_template_service,
     )
 
@@ -54,6 +58,8 @@ def main() -> None:
         attendance_service=attendance_service,
         person_service=person_service,
         identifier_service=identifier_service,
+        event_service=event_service,
+        template_service=event_template_service,
     )
     window.show()
 

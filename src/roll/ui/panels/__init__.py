@@ -1,5 +1,5 @@
+from roll.ui.panels.event_details_panel import EventDetailsPanel
 from roll.ui.panels.calendar_panel import CalendarPanel
-from roll.ui.panels.day_events_panel import DayEventsPanel
-from roll.ui.panels.scanner_panel import ScannerPanel
+from roll.ui.panels.attendance_history_panel import AttendanceHistoryPanel
 
-__all__ = ["CalendarPanel", "DayEventsPanel", "ScannerPanel"]
+__all__ = ["EventDetailsPanel", "CalendarPanel", "AttendanceHistoryPanel"]

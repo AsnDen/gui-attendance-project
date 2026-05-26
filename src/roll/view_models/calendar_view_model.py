@@ -12,21 +12,7 @@ from roll.core import (
 
 
 class CalendarPanelViewModel(QObject):
-    """Interface for the CalendarPanel view model.
-
-    Attributes:
-        event_changed (Signal): Emitted when the list of events is
-            updated. Passes a list of BaseEvent to the slot.
-        template_changed (Signal): Emitted when the list of available event
-            templates is updated. Passes a list of EventTemplate
-            objects (list[EventTemplate]).
-        show_warning (Signal): Emitted when a business logic error or warning
-            occurs. Passes a string message (str) to be displayed in the UI.
-        show_success (Signal): Emitted upon successful completion of an operation.
-            Passes a string message (str) to be displayed in the UI.
-        date_changed (Signal): Emitted when the currently selected date changes.
-            Passes the date string (str) in "yyyy-MM-dd" format.
-    """
+    """Interface for the CalendarPanel view model."""
 
     event_changed: Signal = Signal(list)
     template_changed: Signal = Signal(list)
@@ -35,11 +21,11 @@ class CalendarPanelViewModel(QObject):
     date_changed: Signal = Signal(str)
 
     def __init__(
-        self, event_serivce: IEventService, template_service: IEventTemplateService
+        self, event_service: IEventService, template_service: IEventTemplateService
     ) -> None:
         super().__init__()
-        self._event_service: IEventService = event_serivce
-        self._template_serivce: IEventTemplateService = template_service
+        self._event_service: IEventService = event_service
+        self._template_service: IEventTemplateService = template_service
 
         self._events: list[BaseEvent] = []
         self._templates: list[BaseEventTemplate] = []
@@ -47,78 +33,41 @@ class CalendarPanelViewModel(QObject):
 
     @property
     def events(self) -> list[BaseEvent]:
-        """Gets all events for selected date.
-
-        Returns:
-            List of BaseEvent: all events for the selected date.
-        """
+        """Gets all events for selected date."""
         return self._events
 
     @property
     def templates(self) -> list[BaseEventTemplate]:
-        """Gets all available event templates.
-
-        Returns:
-            list[EventTemplate]: A list of event templates for the quick-add panel.
-        """
+        """Gets all available event templates."""
         return self._templates
 
     @property
     def selected_date(self) -> str:
-        """Gets selected date.
-
-        Returns:
-            str: date in format yyyy-MM-dd.
-        """
+        """Gets selected date."""
         return self._selected_date
 
     def select_date(self, date: QDate) -> None:
-        """Loads events from the event service.
-
-        Triggers the `event_changed` signal once data fetching and
-        filtering are complete.
-        """
+        """Loads events from the event service."""
         new_date_str = date.toString("yyyy-MM-dd")
         if self._selected_date != new_date_str:
             self._selected_date = new_date_str
             self.date_changed.emit(self._selected_date)
 
     def load_events(self) -> None:
-        """Loads event templates from the event tepmlate service.
-
-        Triggers the `template_changed` signal once data fetching and
-        filtering are complete.
-        raise NotImplementedError
-        """
+        """Loads events for selected date."""
         current_date = date.fromisoformat(self._selected_date)
         self._events = list(self._event_service.get_day_events(current_date))
         self.event_changed.emit(self._events)
 
     def load_event_templates(self) -> None:
-        """Handles the date selection event from the calendar widget.
-
-        Updates the internal state and emits the `date_changed` signal.
-
-        Args:
-            date: The date object selected by the user in the UI.
-        """
-        self._templates = list(self._template_serivce.get_all_templates())
+        """Loads all event templates."""
+        self._templates = list(self._template_service.get_all_templates())
         self.template_changed.emit(self._templates)
 
     def add_new_event(
         self, label: str, description: str, start_time: time, duration: timedelta
     ) -> None:
-        """Adds new event to the currently selected date.
-
-        This method validates the input, creates a new schedule item,
-        saves it to the database, and notifies the UI about the updates.
-
-        Args:
-            label: The name of the new event. Must not be empty.
-            description: The description of event. Can be an empty string.
-            start_time: The event start time.
-            duration: The event duration.
-        """
+        """Adds new event to the currently selected date."""
         if not label.strip():
             self.show_warning.emit("Название события не может быть пустым!")
             return
@@ -139,19 +88,12 @@ class CalendarPanelViewModel(QObject):
     def add_new_template(
         self, label: str, description: str, start_time: time, duration: timedelta
     ) -> None:
-        """Creates a new reusable event template using event template service.
-
-        Args:
-            label: The name of the template. Must not be empty.
-            description: Default description for events created via this template.
-            start_time: Default start time for this template.
-            duration: Default duration for this template.
-        """
+        """Creates a new reusable event template."""
         if not label.strip():
             self.show_warning.emit("Название шаблона не может быть пустым!")
             return
 
-        _ = self._template_serivce.add_template(
+        _ = self._template_service.add_template(
             label=label,
             description=description,
             start_time=start_time,
@@ -161,16 +103,35 @@ class CalendarPanelViewModel(QObject):
         self.load_event_templates()
 
     def quick_add_template(self, template: EventTemplate) -> None:
-        """Quickly adds an existing event to the selected date.
-
-        Used when double-clicking an item in the "Event template" list.
-
-        Args:
-            template: The EventTemplate object selected from the templates list.
-        """
+        """Quickly adds an existing template to the selected date."""
         self.add_new_event(
             label=template.label,
             description=template.description,
             start_time=template.start_time,
             duration=template.duration,
         )
+
+    def update_event(self, event_id: int, label: str, description: str) -> None:
+        """Updates an existing event."""
+        if not label.strip():
+            self.show_warning.emit("Название события не может быть пустым!")
+            return
+        try:
+            self._event_service.update_event(
+                event_id,
+                label=label,
+                description=description
+            )
+            self.show_success.emit("Событие обновлено.")
+            self.load_events()
+        except Exception as e:
+            self.show_warning.emit(str(e))
+
+    def delete_event(self, event_id: int, event_label: str, event_date_str: str) -> None:
+        """Deletes an event."""
+        try:
+            self._event_service.delete_event(event_id)
+            self.show_success.emit(f"Событие '{event_label}' удалено из расписания.")
+            self.load_events()
+        except Exception as e:
+            self.show_warning.emit(str(e))
