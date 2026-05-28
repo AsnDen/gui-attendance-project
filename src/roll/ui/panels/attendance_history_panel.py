@@ -78,6 +78,7 @@ class AttendanceHistoryPanel(QFrame):
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self._table.setAlternatingRowColors(True)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
         layout.addWidget(self._table)
 
         self._info_label = QLabel("Выберите предмет в расписании")
