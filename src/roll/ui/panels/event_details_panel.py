@@ -1,4 +1,3 @@
-# src/roll/ui/panels/event_details_panel.py
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -98,6 +97,7 @@ class EventDetailsPanel(QFrame):
         self._table.horizontalHeader().setVisible(False)
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setStretchLastSection(True)
+        self._table.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self._table)
 
     def _on_qr_clicked(self):
@@ -107,6 +107,25 @@ class EventDetailsPanel(QFrame):
     def _on_manual_clicked(self):
         if self._current_event:
             self.manual_mark_requested.emit(self._current_event)
+
+    def _on_item_double_clicked(self, item):
+        if not self._current_event:
+            return
+        row = item.row()
+        person_id = self._row_for_person.get(row)
+        if person_id:
+            self._toggle_member(person_id)
+
+    def _toggle_member(self, person_id: int):
+        if not self._current_event:
+            return
+        attendances = {a.person_id: a for a in self._attendance_service.get_event_attendance(self._current_event.event_id)}
+        existing = attendances.get(person_id)
+        if existing and existing.status == AttendanceStatus.PRESENT:
+            self._attendance_service.update_attendance(existing.attendance_id, AttendanceStatus.ABSENT)
+        else:
+            self._attendance_service.add_attendance(person_id, self._current_event.event_id, AttendanceStatus.PRESENT)
+        self._update_ui()
 
     def set_event(self, event: BaseEvent | None):
         self._current_event = event
@@ -132,16 +151,18 @@ class EventDetailsPanel(QFrame):
         self._qr_btn.setEnabled(True)
         self._manual_btn.setEnabled(True)
 
-        # Сортировка участников по алфавиту
         persons = list(self._person_service.get_all_persons())
         persons.sort(key=lambda p: p.label.lower())
 
-        attendances = {a.person_id: a for a in self._attendance_service.get_event_attendance(self._current_event.event_id)}
+        try:
+            attendances = {a.person_id: a for a in self._attendance_service.get_event_attendance(self._current_event.event_id)}
+        except Exception:
+            attendances = {}
 
         self._table.setRowCount(len(persons))
         self._row_for_person.clear()
         for row, person in enumerate(persons):
-            self._row_for_person[person.person_id] = row
+            self._row_for_person[row] = person.person_id
             item = QTableWidgetItem(person.label)
             is_present = person.person_id in attendances and attendances[person.person_id].status == AttendanceStatus.PRESENT
             if is_present:
@@ -151,12 +172,7 @@ class EventDetailsPanel(QFrame):
             self._table.setItem(row, 0, item)
 
     def mark_person(self, person_id: int):
-        if person_id in self._row_for_person:
-            row = self._row_for_person[person_id]
-            item = self._table.item(row, 0)
-            if item:
-                item.setForeground(QColor("#27ae60"))
+        self._update_ui()
 
     def refresh(self):
-        if self._current_event:
-            self._update_ui()
+        self._update_ui()

@@ -1,4 +1,3 @@
-# src/roll/ui/panels/scanner_panel.py
 from functools import partial
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QPixmap

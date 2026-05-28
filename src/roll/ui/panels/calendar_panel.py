@@ -1,4 +1,3 @@
-# src/roll/ui/panels/calendar_panel.py
 from datetime import datetime, time, timedelta
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
@@ -144,13 +143,11 @@ class CalendarPanel(QFrame):
         self._view_model.date_changed.connect(self._on_view_model_date_changed)
         self._view_model.event_changed.connect(self._on_view_model_events_changed)
         self._view_model.show_warning.connect(lambda msg: QMessageBox.warning(self, "Ошибка", msg))
-        self._view_model.show_success.connect(lambda msg: QMessageBox.information(self, "Успех", msg))
 
     def _on_view_model_date_changed(self, date_str: str) -> None:
         self.date_selected.emit(date_str)
 
     def _on_view_model_events_changed(self, events: list[BaseEvent]) -> None:
-        """Обновить список событий при изменении модели."""
         self._current_events = events
         self._update_schedule_list()
 
@@ -189,10 +186,21 @@ class CalendarPanel(QFrame):
             return
         dialog = EditEventDialog(self, event, self._template_service)
         if dialog.exec():
-            new_label, new_topic = dialog.get_data()
-            if new_label:
-                self._view_model.update_event(event.event_id, new_label, new_topic)
+            new_label, new_topic, new_time, new_duration_min = dialog.get_data()
+            new_start = datetime.combine(event.start_time.date(), new_time)
+            new_duration = timedelta(minutes=new_duration_min)
+            try:
+                self._view_model._event_service.update_event(
+                    event.event_id,
+                    label=new_label,
+                    description=new_topic,
+                    start_time=new_start,
+                    duration=new_duration
+                )
+                self._view_model.load_events()
                 self.data_changed.emit()
+            except Exception as e:
+                QMessageBox.warning(self, "Ошибка", str(e))
 
     def _delete_selected_event(self):
         if self._selected_event_id is None:
@@ -202,8 +210,8 @@ class CalendarPanel(QFrame):
             return
         reply = QMessageBox.question(self, "Подтверждение",
                                      f"Удалить '{event.label}' с {self._current_date}?",
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
             self._view_model.delete_event(event.event_id, event.label, self._current_date)
             self.data_changed.emit()
 
@@ -213,6 +221,7 @@ class CalendarPanel(QFrame):
             QMessageBox.warning(self, "Ошибка", "Выберите дату в календаре!")
             return
         date_str = selected_date.toString("yyyy-MM-dd")
+        self._current_date = date_str
 
         templates = self._template_service.get_all_templates()
         if not templates:
@@ -225,7 +234,6 @@ class CalendarPanel(QFrame):
             subject_id, subject_label, topic, qtime, duration_min = dialog.get_data()
             start_time = time(qtime.hour(), qtime.minute())
             duration = timedelta(minutes=duration_min)
-            # Используем ViewModel для добавления
             self._view_model.add_new_event(
                 label=subject_label,
                 description=topic,

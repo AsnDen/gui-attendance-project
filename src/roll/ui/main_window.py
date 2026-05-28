@@ -5,7 +5,10 @@ from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QWidget
 
 from roll.core import AttendanceStatus, BaseEvent
 from roll.core.interfaces import IAttendanceService, IIdentifierService, IPersonService
-from roll.ui.dialogs import GroupManagementDialog, SubjectsManagementDialog, ManualAttendanceDialog, QRScanDialog
+from roll.ui.dialogs import (
+    GroupManagementDialog, SubjectsManagementDialog, ManualAttendanceDialog,
+    QRMarkDialog, QRScanDialog
+)
 from roll.ui.panels import EventDetailsPanel, AttendanceHistoryPanel, CalendarPanel
 from roll.view_models import QRScannerViewModel, ViewModelFactory
 from roll.view_models.subjects_management_viewmodel import SubjectsManagementViewModel
@@ -100,16 +103,21 @@ class MainWindow(QMainWindow):
 
     def _on_data_changed(self):
         if self._current_selected_event:
-            self._history_panel.refresh()
-            self._details_panel.refresh()
+            try:
+                self._event_service.get_event(self._current_selected_event.event_id)
+                self._history_panel.refresh()
+                self._details_panel.refresh()
+            except:
+                self._on_event_selected(None)
 
     def _on_qr_mark(self, event: BaseEvent) -> None:
         scanner_vm = QRScannerViewModel()
-        dialog = QRScanDialog(self, scanner_vm)
-        if dialog.exec():
-            qr_hash = dialog.get_hash()
-            if qr_hash:
-                self._process_qr_mark(qr_hash, event)
+
+        def mark_attendance(qr_hash: str):
+            self._process_qr_mark(qr_hash, event)
+
+        dialog = QRMarkDialog(self, scanner_vm, mark_attendance)
+        dialog.exec()
 
     def _process_qr_mark(self, qr_hash: str, event: BaseEvent):
         person = self._identifier_service.find_person_by_hash(qr_hash)
@@ -119,7 +127,7 @@ class MainWindow(QMainWindow):
         try:
             self._attendance_service.add_attendance(person.person_id, event.event_id, AttendanceStatus.PRESENT)
             self.statusBar().showMessage(f"Отмечен: {person.label}")
-            self._details_panel.mark_person(person.person_id)
+            self._details_panel.refresh()
             self._history_panel.refresh()
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", str(e))
@@ -134,8 +142,12 @@ class MainWindow(QMainWindow):
         dialog = GroupManagementDialog(self, self._person_service, self._identifier_service)
         dialog.exec()
         if self._current_selected_event:
-            self._details_panel.refresh()
-            self._history_panel.refresh()
+            try:
+                self._event_service.get_event(self._current_selected_event.event_id)
+                self._details_panel.refresh()
+                self._history_panel.refresh()
+            except:
+                self._on_event_selected(None)
 
     def _manage_subjects(self) -> None:
         vm = SubjectsManagementViewModel(self._template_service, self._event_service)
