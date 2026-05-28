@@ -78,7 +78,7 @@ class AttendanceHistoryPanel(QFrame):
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self._table.setAlternatingRowColors(True)
-        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)  # forbid editing
         layout.addWidget(self._table)
 
         self._info_label = QLabel("Выберите предмет в расписании")
@@ -144,7 +144,7 @@ class AttendanceHistoryPanel(QFrame):
             for col, ev in enumerate(subject_events, start=2):
                 att_list = self._attendance_service.get_event_attendance(ev.event_id)
                 present = any(a.person_id == person.person_id and a.status == AttendanceStatus.PRESENT for a in att_list)
-                mark = "✔" if present else "✘"
+                mark = "." if present else "H"
                 item = QTableWidgetItem(mark)
                 item.setTextAlignment(Qt.AlignCenter)
                 item.setForeground(QColor("#27ae60") if present else QColor("#e74c3c"))

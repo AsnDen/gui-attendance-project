@@ -266,7 +266,7 @@ class QRMarkDialog(QDialog):
 
 
 class GroupManagementDialog(QDialog):
-    """Manage persons and QR binding. Edit name by double-click."""
+    """Manage persons and QR binding. Edit name by double-click (opens dialog)."""
     def __init__(self, parent, person_service, identifier_service):
         super().__init__(parent)
         self._person_service = person_service
@@ -293,7 +293,7 @@ class GroupManagementDialog(QDialog):
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self._table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self._table.verticalHeader().setVisible(False)
-        self._table.setEditTriggers(QTableWidget.DoubleClicked)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)  # forbid direct edit
         self._table.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self._table)
 
@@ -317,7 +317,6 @@ class GroupManagementDialog(QDialog):
         for row, person in enumerate(persons):
             self._person_ids.append(person.person_id)
             name_item = QTableWidgetItem(person.label)
-            name_item.setFlags(name_item.flags() | Qt.ItemIsEditable)
             self._table.setItem(row, 0, name_item)
             identifiers = self._identifier_service.get_person_identifiers(person.person_id)
             has_qr = len(identifiers) > 0
@@ -325,7 +324,6 @@ class GroupManagementDialog(QDialog):
             qr_item = QTableWidgetItem(qr_status)
             if not has_qr:
                 qr_item.setForeground(QColor("#7f8c8d"))
-            qr_item.setFlags(qr_item.flags() & ~Qt.ItemIsEditable)
             self._table.setItem(row, 1, qr_item)
             btn = QPushButton("Удалить QR" if has_qr else "Привязать QR")
             if has_qr:
@@ -344,7 +342,7 @@ class GroupManagementDialog(QDialog):
         if ok and new_name and new_name != old_name:
             try:
                 self._person_service.update_person(person_id, label=new_name)
-                self._load_members()  # обновить таблицу
+                self._load_members()
             except Exception as e:
                 QMessageBox.warning(self, "Ошибка", f"Не удалось обновить имя: {e}")
 
@@ -402,7 +400,7 @@ class GroupManagementDialog(QDialog):
 
 
 class AttendanceDialog(QDialog):
-    """Attendance marking dialog for a specific event."""
+    """Attendance marking dialog for a specific event. Toggle status by double-click."""
     data_changed = Signal()
 
     def __init__(self, parent, attendance_service, person_service, event):
@@ -445,6 +443,7 @@ class AttendanceDialog(QDialog):
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.verticalHeader().setVisible(False)
         self._table.setColumnWidth(0, 250)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)  # forbid direct editing
         self._table.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self._table)
 
@@ -654,6 +653,7 @@ class ManualAttendanceDialog(QDialog):
         self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
         layout.addWidget(self._table)
 
         btn_layout = QHBoxLayout()
@@ -709,7 +709,7 @@ class ManualAttendanceDialog(QDialog):
 
 
 class SubjectsManagementDialog(QDialog):
-    """Manage subjects (templates). Edit by double-click."""
+    """Manage subjects (templates). Edit by double-click (opens dialog)."""
     subjects_changed = Signal()
 
     def __init__(self, parent, view_model):
@@ -737,7 +737,7 @@ class SubjectsManagementDialog(QDialog):
         self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self._table.verticalHeader().setVisible(False)
-        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)  # forbid direct edit
         self._table.itemDoubleClicked.connect(self._edit_subject_by_double_click)
         layout.addWidget(self._table)
 
@@ -819,7 +819,7 @@ class AttendanceDetailsDialog(QDialog):
         self._table.setHorizontalHeaderLabels(["Участник"])
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.verticalHeader().setVisible(False)
-        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)  # read-only
         layout.addWidget(self._table)
         close_btn = QPushButton("Закрыть")
         close_btn.clicked.connect(self.accept)
