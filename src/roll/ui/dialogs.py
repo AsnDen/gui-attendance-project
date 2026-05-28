@@ -84,7 +84,7 @@ class SubjectNameDescriptionDialog(QDialog):
 
 
 class QRScanDialog(QDialog):
-    """Closes automatically after QR detection. Returns hash via get_hash(). Used for binding QR."""
+    """Closes automatically after QR detection. Returns hash via get_hash()."""
     def __init__(self, parent, scanner_vm):
         super().__init__(parent)
         self._scanner_vm = scanner_vm
@@ -266,7 +266,7 @@ class QRMarkDialog(QDialog):
 
 
 class GroupManagementDialog(QDialog):
-    """Manage persons and QR binding."""
+    """Manage persons and QR binding. Edit name by double-click."""
     def __init__(self, parent, person_service, identifier_service):
         super().__init__(parent)
         self._person_service = person_service
@@ -287,13 +287,14 @@ class GroupManagementDialog(QDialog):
         layout.addWidget(title)
 
         self._table = QTableWidget()
-        self._table.setColumnCount(4)
-        self._table.setHorizontalHeaderLabels(["ID", "ФИО", "QR-код", ""])
-        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self._table.setColumnCount(3)
+        self._table.setHorizontalHeaderLabels(["ФИО", "QR-код", ""])
+        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self._table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        self._table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self._table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QTableWidget.DoubleClicked)
+        self._table.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self._table)
 
         btn_layout = QHBoxLayout()
@@ -312,41 +313,40 @@ class GroupManagementDialog(QDialog):
     def _load_members(self):
         persons = self._person_service.get_all_persons()
         self._table.setRowCount(len(persons))
+        self._person_ids = []
         for row, person in enumerate(persons):
-            self._table.setItem(row, 0, QTableWidgetItem(str(person.person_id)))
+            self._person_ids.append(person.person_id)
             name_item = QTableWidgetItem(person.label)
             name_item.setFlags(name_item.flags() | Qt.ItemIsEditable)
-            self._table.setItem(row, 1, name_item)
-
+            self._table.setItem(row, 0, name_item)
             identifiers = self._identifier_service.get_person_identifiers(person.person_id)
             has_qr = len(identifiers) > 0
             qr_status = "Привязан" if has_qr else "Не привязан"
             qr_item = QTableWidgetItem(qr_status)
             if not has_qr:
                 qr_item.setForeground(QColor("#7f8c8d"))
-            self._table.setItem(row, 2, qr_item)
-
+            qr_item.setFlags(qr_item.flags() & ~Qt.ItemIsEditable)
+            self._table.setItem(row, 1, qr_item)
             btn = QPushButton("Удалить QR" if has_qr else "Привязать QR")
             if has_qr:
                 btn.clicked.connect(lambda checked, pid=person.person_id: self._unbind_qr(pid))
             else:
                 btn.clicked.connect(lambda checked, pid=person.person_id: self._bind_qr(pid))
-            self._table.setCellWidget(row, 3, btn)
+            self._table.setCellWidget(row, 2, btn)
 
-            self._table.item(row, 0).setData(Qt.UserRole, person.person_id)
-
-        self._table.itemChanged.connect(self._on_name_changed)
-
-    def _on_name_changed(self, item):
-        if item.column() == 1:
-            row = item.row()
-            person_id = self._table.item(row, 0).data(Qt.UserRole)
-            new_name = item.text().strip()
-            if new_name:
-                try:
-                    self._person_service.update_person(person_id, label=new_name)
-                except Exception as e:
-                    QMessageBox.warning(self, "Ошибка", f"Не удалось обновить имя: {e}")
+    def _on_item_double_clicked(self, item):
+        if item.column() != 0:
+            return
+        row = item.row()
+        person_id = self._person_ids[row]
+        old_name = item.text()
+        new_name, ok = QInputDialog.getText(self, "Редактирование", "Введите новое ФИО:", text=old_name)
+        if ok and new_name and new_name != old_name:
+            try:
+                self._person_service.update_person(person_id, label=new_name)
+                self._load_members()  # обновить таблицу
+            except Exception as e:
+                QMessageBox.warning(self, "Ошибка", f"Не удалось обновить имя: {e}")
 
     def _add_member(self):
         name, ok = QInputDialog.getText(self, "Новый участник", "Введите ФИО:")
@@ -357,7 +357,7 @@ class GroupManagementDialog(QDialog):
     def _delete_member(self):
         current_row = self._table.currentRow()
         if current_row >= 0:
-            person_id = self._table.item(current_row, 0).data(Qt.UserRole)
+            person_id = self._person_ids[current_row]
             person = self._person_service.get_person(person_id)
             if person and QMessageBox.question(self, "Подтверждение", f"Удалить '{person.label}'?",
                                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
@@ -709,7 +709,7 @@ class ManualAttendanceDialog(QDialog):
 
 
 class SubjectsManagementDialog(QDialog):
-    """Manage subjects (templates)."""
+    """Manage subjects (templates). Edit by double-click."""
     subjects_changed = Signal()
 
     def __init__(self, parent, view_model):
@@ -737,18 +737,19 @@ class SubjectsManagementDialog(QDialog):
         self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self._table.itemDoubleClicked.connect(self._edit_subject_by_double_click)
         layout.addWidget(self._table)
+
         btn_layout = QHBoxLayout()
         add_btn = QPushButton("Добавить")
         add_btn.clicked.connect(self._add_subject)
-        edit_btn = QPushButton("Редактировать")
-        edit_btn.clicked.connect(self._edit_subject)
         delete_btn = QPushButton("Удалить")
         delete_btn.clicked.connect(self._delete_subject)
         btn_layout.addWidget(add_btn)
-        btn_layout.addWidget(edit_btn)
         btn_layout.addWidget(delete_btn)
         layout.addLayout(btn_layout)
+
         close_btn = QPushButton("Закрыть")
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
@@ -768,14 +769,11 @@ class SubjectsManagementDialog(QDialog):
             if name:
                 self._view_model.add_template(name, desc)
 
-    def _edit_subject(self):
-        current_row = self._table.currentRow()
-        if current_row < 0:
-            QMessageBox.warning(self, "Ошибка", "Выберите предмет для редактирования.")
-            return
-        subject_id = self._table.item(current_row, 0).data(Qt.UserRole)
-        old_name = self._table.item(current_row, 0).text()
-        old_desc = self._table.item(current_row, 1).text()
+    def _edit_subject_by_double_click(self, item):
+        row = item.row()
+        subject_id = self._table.item(row, 0).data(Qt.UserRole)
+        old_name = self._table.item(row, 0).text()
+        old_desc = self._table.item(row, 1).text()
         dialog = SubjectNameDescriptionDialog(self, "Редактирование предмета", old_name, old_desc)
         if dialog.exec() == QDialog.Accepted:
             new_name, new_desc = dialog.get_data()
@@ -797,7 +795,7 @@ class SubjectsManagementDialog(QDialog):
 
 
 class AttendanceDetailsDialog(QDialog):
-    """Show list of participants who are present for an event."""
+    """Show list of participants who are present for an event. Read-only."""
     def __init__(self, parent, attendance_service, person_service, event: BaseEvent):
         super().__init__(parent)
         self._attendance_service = attendance_service
@@ -821,6 +819,7 @@ class AttendanceDetailsDialog(QDialog):
         self._table.setHorizontalHeaderLabels(["Участник"])
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
         layout.addWidget(self._table)
         close_btn = QPushButton("Закрыть")
         close_btn.clicked.connect(self.accept)

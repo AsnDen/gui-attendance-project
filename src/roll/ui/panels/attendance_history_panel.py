@@ -126,6 +126,8 @@ class AttendanceHistoryPanel(QFrame):
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
         self._table.setColumnWidth(1, 100)
 
+        self._table.horizontalHeader().setMinimumSectionSize(100)
+
         for col, ev in enumerate(subject_events, start=2):
             date_str = ev.start_time.strftime("%d.%m.%Y")
             self._table.setHorizontalHeaderItem(col, QTableWidgetItem(date_str))
@@ -166,13 +168,13 @@ class AttendanceHistoryPanel(QFrame):
                 headers = []
                 for col in range(self._table.columnCount()):
                     headers.append(self._table.horizontalHeaderItem(col).text())
-                f.write(";".join(headers) + "\n")
+                f.write(",".join(headers) + "\n")
                 for row in range(self._table.rowCount()):
                     row_data = []
                     for col in range(self._table.columnCount()):
                         item = self._table.item(row, col)
                         row_data.append(item.text() if item else "")
-                    f.write(";".join(row_data) + "\n")
+                    f.write(",".join(row_data) + "\n")
             QMessageBox.information(self, "Экспорт", "CSV сохранён.")
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить файл: {e}")

@@ -10,4 +10,4 @@ __all__ = [
     "ViewModelFactory",
     "DayEventsViewModel",
     "SubjectsManagementViewModel",
-]ы
+]

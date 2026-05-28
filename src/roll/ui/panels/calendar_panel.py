@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
     QCalendarWidget, QFrame, QVBoxLayout, QHBoxLayout,
@@ -186,7 +186,9 @@ class CalendarPanel(QFrame):
             return
         dialog = EditEventDialog(self, event, self._template_service)
         if dialog.exec():
-            new_label, new_topic, new_time, new_duration_min = dialog.get_data()
+            new_label, new_topic, new_qtime, new_duration_min = dialog.get_data()
+            from datetime import time as datetime_time
+            new_time = datetime_time(new_qtime.hour(), new_qtime.minute())
             new_start = datetime.combine(event.start_time.date(), new_time)
             new_duration = timedelta(minutes=new_duration_min)
             try:
@@ -232,7 +234,8 @@ class CalendarPanel(QFrame):
         dialog = AddToScheduleDialog(self, date_str, subjects)
         if dialog.exec():
             subject_id, subject_label, topic, qtime, duration_min = dialog.get_data()
-            start_time = time(qtime.hour(), qtime.minute())
+            from datetime import time as datetime_time
+            start_time = datetime_time(qtime.hour(), qtime.minute())
             duration = timedelta(minutes=duration_min)
             self._view_model.add_new_event(
                 label=subject_label,
