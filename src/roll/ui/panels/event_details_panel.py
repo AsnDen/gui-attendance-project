@@ -1,3 +1,4 @@
+# src/roll/ui/panels/event_details_panel.py
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -98,7 +99,6 @@ class EventDetailsPanel(QFrame):
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self._table.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self._table)
 
     def _on_qr_clicked(self):
@@ -108,25 +108,6 @@ class EventDetailsPanel(QFrame):
     def _on_manual_clicked(self):
         if self._current_event:
             self.manual_mark_requested.emit(self._current_event)
-
-    def _on_item_double_clicked(self, item):
-        if not self._current_event:
-            return
-        row = item.row()
-        person_id = self._row_for_person.get(row)
-        if person_id:
-            self._toggle_member(person_id)
-
-    def _toggle_member(self, person_id: int):
-        if not self._current_event:
-            return
-        attendances = {a.person_id: a for a in self._attendance_service.get_event_attendance(self._current_event.event_id)}
-        existing = attendances.get(person_id)
-        if existing and existing.status == AttendanceStatus.PRESENT:
-            self._attendance_service.update_attendance(existing.attendance_id, AttendanceStatus.ABSENT)
-        else:
-            self._attendance_service.add_attendance(person_id, self._current_event.event_id, AttendanceStatus.PRESENT)
-        self._update_ui()
 
     def set_event(self, event: BaseEvent | None):
         self._current_event = event
