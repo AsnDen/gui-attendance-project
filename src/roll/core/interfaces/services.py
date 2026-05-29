@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
+from roll.core import BaseEventTemplate
 from roll.core.entities import AttendanceStatus
 
 if TYPE_CHECKING:
@@ -110,6 +111,10 @@ class IEventService(ABC):
         """
 
     @abstractmethod
+    def get_day_events(self, date: date) -> tuple[BaseEvent, ...]:
+        pass
+
+    @abstractmethod
     def add_event(
         self,
         label: str,
@@ -167,6 +172,42 @@ class IEventService(ABC):
         Raises:
             EventNotFoundError: event_id is invalid.
         """
+
+
+class IEventTemplateService(ABC):
+    @abstractmethod
+    def get_template(self, event_template_id: int) -> BaseEventTemplate:
+        pass
+
+    @abstractmethod
+    def get_all_templates(self) -> tuple[BaseEventTemplate, ...]:
+        pass
+
+    @abstractmethod
+    def add_template(
+        self,
+        label: str,
+        start_time: time,
+        duration: timedelta,
+        description: str = "",
+    ) -> int:
+        pass
+
+    @abstractmethod
+    def update_template(
+        self,
+        event_template_id: int,
+        *,
+        label: str | None = None,
+        start_time: time | None = None,
+        duration: timedelta | None = None,
+        description: str | None = None,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def delete_template(self, event_template_id: int) -> None:
+        pass
 
 
 class IAttendanceService(ABC):
@@ -331,8 +372,35 @@ class IIdentifierReaderService(ABC):
     """Interface for reading identifier data."""
 
     @abstractmethod
-    def read_identifier(self) -> str:
+    def read_identifier(self) -> str | None:
         """Reads identifier data.
 
-        Returns sha256 of data read.
+        Returns sha256 of data read, or None if no QR code found.
         """
+
+
+class ICameraAvailabilityService(ABC):
+    """Interface for checking camera availability."""
+
+    @staticmethod
+    @abstractmethod
+    def is_camera_available(camera_id: int) -> bool:
+        """
+        Check if camera is available.
+
+        "Available" means:
+        - the camera device exists,
+        - can be opened by OpenCV,
+        - and a frame can be captured successfully.
+
+        Args:
+            camera_id: OpenCV camera device identifier (0,1,2...)
+
+        Returns:
+            True if camera is available, False otherwise.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def get_available_cameras() -> list[int]:
+        """Get list of available camera IDs (0..9)."""

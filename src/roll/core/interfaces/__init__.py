@@ -10,12 +10,14 @@ Provides:
 from roll.core.interfaces.repositories import (
     IAttendanceRepository,
     IEventRepository,
+    IEventTemplateRepository,
     IIdentifierRepository,
     IPersonRepository,
 )
 from roll.core.interfaces.services import (
     IAttendanceService,
     IEventService,
+    IEventTemplateService,
     IIdentifierReaderService,
     IIdentifierService,
     IPersonService,
@@ -27,6 +29,8 @@ __all__ = [
     "IAttendanceService",
     "IEventRepository",
     "IEventService",
+    "IEventTemplateRepository",
+    "IEventTemplateService",
     "IIdentifierReaderService",
     "IIdentifierRepository",
     "IIdentifierService",
